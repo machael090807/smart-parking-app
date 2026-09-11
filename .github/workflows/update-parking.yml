@@ -7,9 +7,6 @@ on:
 
   workflow_dispatch:
 
-  schedule:
-    - cron: "*/10 * * * *"
-
 permissions:
   contents: read
   pages: write
@@ -20,10 +17,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -37,7 +37,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate latest parking data
+      - name: Generate parking fallback data
         run: |
           python generate.py
 
@@ -49,15 +49,25 @@ jobs:
         with:
           path: ./docs
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-latest
-    needs: build
+  deploy:
+
+    environment:
+
+      name:
+        github-pages
+
+      url:
+        ${{ steps.deployment.outputs.page_url }}
+
+    runs-on:
+      ubuntu-latest
+
+    needs:
+      build
 
     steps:
+
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
