@@ -67,12 +67,12 @@ input {
 }
 
 /* =====================================================
-   Top controls
+   Top control
 ===================================================== */
 
-.menu-button,
-.locate-button {
+.menu-button {
   position: absolute;
+  top: 18px;
   right: 18px;
   z-index: 30;
 
@@ -92,20 +92,10 @@ input {
     0 4px 18px rgba(0, 0, 0, 0.14);
 
   cursor: pointer;
-}
 
-.menu-button {
-  top: 18px;
-}
-
-.locate-button {
-  top: 76px;
-  color: #1677ff;
-}
-
-.locate-button:disabled {
-  opacity: 0.55;
-  cursor: wait;
+  transition:
+    transform 0.24s ease,
+    opacity 0.18s ease;
 }
 
 .menu-lines {
@@ -120,16 +110,6 @@ input {
   height: 2px;
   border-radius: 999px;
   background: #202124;
-}
-
-.locate-button svg {
-  width: 25px;
-  height: 25px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 /* =====================================================
@@ -343,19 +323,41 @@ input {
 }
 
 /* =====================================================
-   Bottom panel
+   Bottom UI
+
+   資訊、我的位置、重新整理都是獨立方塊。
 ===================================================== */
 
-.bottom-card {
+.bottom-ui {
   position: absolute;
   left: 50%;
   bottom: 18px;
   z-index: 25;
 
-  width: min(calc(100% - 36px), 720px);
-  padding: 12px;
+  width: min(calc(100% - 36px), 860px);
 
-  border-radius: 18px;
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+
+  transform: translateX(-50%);
+
+  transition:
+    transform 0.24s ease,
+    opacity 0.18s ease;
+}
+
+.info-card {
+  min-width: 0;
+  flex: 1;
+
+  padding: 11px 14px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  border-radius: 16px;
 
   background: rgba(255,255,255,.97);
 
@@ -363,19 +365,6 @@ input {
     0 8px 32px rgba(0,0,0,.16);
 
   backdrop-filter: blur(8px);
-
-  transform: translateX(-50%);
-}
-
-.bottom-main {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.bottom-info {
-  min-width: 0;
-  flex: 1;
 }
 
 .bottom-count {
@@ -396,30 +385,83 @@ input {
   white-space: nowrap;
 }
 
-.refresh-button {
-  min-width: 92px;
-  height: 44px;
-  padding: 0 15px;
+.bottom-action {
+  min-height: 58px;
+
   flex: 0 0 auto;
 
   border: 0;
-  border-radius: 12px;
+  border-radius: 16px;
+
+  background: rgba(255,255,255,.97);
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,.14);
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 700;
+}
+
+.locate-bottom-button {
+  width: 58px;
+  color: #1677ff;
+}
+
+.locate-bottom-button svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.refresh-button {
+  min-width: 94px;
+  padding: 0 16px;
 
   background: #1677ff;
   color: #fff;
-
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
-.refresh-button:disabled {
+.bottom-action:disabled {
   opacity: .55;
-  cursor: not-allowed;
+  cursor: wait;
 }
 
 /* =====================================================
-   Map / user / low-zoom grouped bars
+   Map movement UI animation
+===================================================== */
+
+/*
+  使用者拖動 / 縮放地圖時：
+  - 漢堡選單往上離開畫面
+  - 底部資訊與操作按鈕往下離開畫面
+  停止移動後再滑回。
+*/
+.map-ui-moving .menu-button {
+  transform: translateY(-90px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-ui-moving .bottom-ui {
+  transform:
+    translateX(-50%)
+    translateY(calc(100% + 55px));
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =====================================================
+   User / grouped parking dots
 ===================================================== */
 
 .user-dot {
@@ -432,20 +474,28 @@ input {
     0 0 0 4px rgba(22,119,255,.25);
 }
 
-.group-parking-bar {
-  width: 42px;
-  height: 12px;
-  border: 2px solid #ffffff;
-  border-radius: 3px;
+/*
+  縮小地圖時，多個車格合併成一個圓點。
+  圓點內使用 conic-gradient 保留紅 / 綠 / 灰比例。
+*/
+.group-parking-dot {
+  width: 25px;
+  height: 25px;
+
+  border: 3px solid #ffffff;
+  border-radius: 50%;
 
   box-shadow:
-    0 1px 3px rgba(0,0,0,.20);
+    0 2px 6px rgba(0,0,0,.22);
 
   cursor: pointer;
+
+  transition:
+    transform 0.15s ease;
 }
 
-.group-parking-bar:hover {
-  transform: scale(1.08);
+.group-parking-dot:hover {
+  transform: scale(1.10);
 }
 
 /* =====================================================
@@ -472,10 +522,10 @@ input {
 }
 
 .popup-space {
-  width: 25px;
-  height: 11px;
-  border: 2px solid #fff;
-  border-radius: 3px;
+  width: 13px;
+  height: 13px;
+  border: 3px solid #fff;
+  border-radius: 50%;
   box-shadow: 0 0 0 1px rgba(0,0,0,.15);
 }
 
@@ -544,42 +594,68 @@ input {
     height: 44px;
   }
 
-  .locate-button {
-    top: 64px;
-    right: 12px;
-    width: 44px;
-    height: 44px;
-  }
-
   .side-menu {
     width: min(330px, 90vw);
     padding: 19px;
   }
 
-  .bottom-card {
+  .bottom-ui {
     bottom: max(10px, env(safe-area-inset-bottom));
     width: calc(100% - 20px);
-    padding: 10px;
-    border-radius: 16px;
+    gap: 7px;
   }
 
-  .bottom-main {
-    gap: 8px;
+  .info-card {
+    padding: 9px 11px;
+    border-radius: 14px;
   }
 
   .bottom-count {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .bottom-status {
-    font-size: 10px;
+    font-size: 9.5px;
+  }
+
+  .bottom-action {
+    min-height: 54px;
+    border-radius: 14px;
+  }
+
+  .locate-bottom-button {
+    width: 52px;
   }
 
   .refresh-button {
-    min-width: 76px;
-    height: 42px;
-    padding: 0 11px;
+    min-width: 78px;
+    padding: 0 10px;
     font-size: 13px;
+  }
+}
+
+@media (max-width: 390px) {
+  .bottom-ui {
+    gap: 6px;
+  }
+
+  .info-card {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .bottom-count {
+    font-size: 11px;
+  }
+
+  .locate-bottom-button {
+    width: 48px;
+  }
+
+  .refresh-button {
+    min-width: 70px;
+    padding: 0 8px;
+    font-size: 12px;
   }
 }
 </style>
@@ -604,23 +680,6 @@ input {
     </div>
   </button>
 
-  <button
-    id="locateButton"
-    class="locate-button"
-    type="button"
-    aria-label="回到我的位置"
-    title="回到我的位置"
-  >
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="4"></circle>
-      <circle cx="12" cy="12" r="9"></circle>
-      <path d="M12 2v3"></path>
-      <path d="M12 19v3"></path>
-      <path d="M2 12h3"></path>
-      <path d="M19 12h3"></path>
-    </svg>
-  </button>
-
   <div
     id="menuBackdrop"
     class="menu-backdrop"
@@ -639,7 +698,7 @@ input {
         </div>
 
         <div class="menu-version">
-          智慧停車 APP v1.0.6
+          版本：v1.0.7
         </div>
       </div>
 
@@ -758,38 +817,56 @@ input {
     </div>
 
   </aside>
+  <div
+    id="bottomUI"
+    class="bottom-ui"
+  >
 
-  <div class="bottom-card">
+    <div
+      id="infoCard"
+      class="info-card"
+    >
 
-    <div class="bottom-main">
-
-      <div class="bottom-info">
-
-        <div
-          id="bottomCount"
-          class="bottom-count"
-        >
-          正在準備停車格資料…
-        </div>
-
-        <div
-          id="bottomStatus"
-          class="bottom-status"
-        >
-          APP v1.0.6
-        </div>
-
+      <div
+        id="bottomCount"
+        class="bottom-count"
+      >
+        正在讀取預載停車資訊…
       </div>
 
-      <button
-        id="reloadButton"
-        class="refresh-button"
-        type="button"
+      <div
+        id="bottomStatus"
+        class="bottom-status"
       >
-        重新整理
-      </button>
+        正在準備資料
+      </div>
 
     </div>
+
+    <button
+      id="locateButton"
+      class="bottom-action locate-bottom-button"
+      type="button"
+      aria-label="我的位置"
+      title="我的位置"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"></circle>
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 2v3"></path>
+        <path d="M12 19v3"></path>
+        <path d="M2 12h3"></path>
+        <path d="M19 12h3"></path>
+      </svg>
+    </button>
+
+    <button
+      id="reloadButton"
+      class="bottom-action refresh-button"
+      type="button"
+    >
+      重新整理
+    </button>
 
   </div>
 
@@ -800,7 +877,7 @@ input {
    Config
 ===================================================== */
 
-const APP_VERSION = "1.0.6";
+const APP_VERSION = "1.0.7";
 
 const LIVE_API_URL =
   "https://smart-parking-app-api.vercel.app/api/parking";
@@ -844,6 +921,10 @@ const locateButton =
 
 const reloadButton =
   document.getElementById("reloadButton");
+
+
+const bottomUI =
+  document.getElementById("bottomUI");
 
 const bottomCount =
   document.getElementById("bottomCount");
@@ -1557,12 +1638,12 @@ function parseLiveCSV(
    Static / live data
 ===================================================== */
 
-async function loadStaticParking() {
+async function fetchStaticParkingSnapshot() {
   const response =
     await fetch(
-      `./parking.json?t=${Date.now()}`,
+      `./parking.json?v=${APP_VERSION}`,
       {
-        cache: "no-store"
+        cache: "force-cache"
       }
     );
 
@@ -1575,30 +1656,51 @@ async function loadStaticParking() {
   const result =
     await response.json();
 
-  parkingData =
-    (
-      Array.isArray(result.data)
-        ? result.data
-        : []
-    )
-    .map(normalizeParking)
-    .filter(Boolean);
-
-  bottomStatus.textContent =
-    `已載入 ${parkingData.length.toLocaleString()} 個停車格 · GitHub 備援資料`;
-
-  renderParking();
+  return (
+    Array.isArray(result.data)
+      ? result.data
+      : []
+  )
+  .map(normalizeParking)
+  .filter(Boolean);
 }
 
-async function refreshLiveParking() {
-  reloadButton.disabled =
-    true;
+/*
+  進站時先立刻開始下載 GitHub Pages 內的預載快照。
+  地圖底圖還在載入時，停車資料已經同步下載中。
+*/
+const initialParkingSnapshotPromise =
+  fetchStaticParkingSnapshot();
 
-  reloadButton.textContent =
-    "更新中…";
+async function loadStaticParking() {
+  parkingData =
+    await initialParkingSnapshotPromise;
+
+  if (!parkingData.length) {
+    throw new Error(
+      "預載停車資料為空"
+    );
+  }
 
   bottomStatus.textContent =
-    "正在向政府 API 取得最新資料…";
+    "已顯示預載停車資料，正在取得最新狀態…";
+
+  renderParking();
+
+  return true;
+}
+
+async function refreshLiveParking({ silent = false } = {}) {
+  if (!silent) {
+    reloadButton.disabled =
+      true;
+
+    reloadButton.textContent =
+      "更新中…";
+
+    bottomStatus.textContent =
+      "正在向政府 API 取得最新資料…";
+  }
 
   try {
     const response =
@@ -1639,7 +1741,7 @@ async function refreshLiveParking() {
       new Date();
 
     bottomStatus.textContent =
-      `即時更新完成 · ${now.toLocaleTimeString("zh-TW")}`;
+      `最新資料 · ${now.toLocaleTimeString("zh-TW")}`;
 
     renderParking();
 
@@ -1654,11 +1756,13 @@ async function refreshLiveParking() {
     return false;
   }
   finally {
-    reloadButton.disabled =
-      false;
+    if (!silent) {
+      reloadButton.disabled =
+        false;
 
-    reloadButton.textContent =
-      "重新整理";
+      reloadButton.textContent =
+        "重新整理";
+    }
   }
 }
 
@@ -1952,7 +2056,7 @@ function getRoadRotation(
 }
 
 /* =====================================================
-   Individual parking icons
+   Individual parking dots
 ===================================================== */
 
 const STATUS_COLORS = {
@@ -1968,125 +2072,11 @@ const BORDER_COLORS = {
   family: "#d946ef"
 };
 
-function createParkingIcon(
-  name,
-  fillColor,
-  borderColor
-) {
-  const width =
-    38;
-
-  const height =
-    14;
-
-  const canvas =
-    document.createElement(
-      "canvas"
-    );
-
-  canvas.width =
-    width;
-
-  canvas.height =
-    height;
-
-  const ctx =
-    canvas.getContext(
-      "2d"
-    );
-
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
-
-  ctx.fillStyle =
-    borderColor;
-
-  ctx.fillRect(
-    0,
-    0,
-    width,
-    height
-  );
-
-  /*
-    特殊車位外框較粗，
-    一般車格維持白色細框。
-  */
-  const inset =
-    borderColor === "#ffffff"
-      ? 2
-      : 3;
-
-  ctx.fillStyle =
-    fillColor;
-
-  ctx.fillRect(
-    inset,
-    inset,
-    width - inset * 2,
-    height - inset * 2
-  );
-
-  const imageData =
-    ctx.getImageData(
-      0,
-      0,
-      width,
-      height
-    );
-
-  if (
-    !map.hasImage(name)
-  ) {
-    map.addImage(
-      name,
-      imageData,
-      {
-        pixelRatio: 1
-      }
-    );
-  }
-}
-
-function registerParkingIcons() {
-  for (
-    const [
-      statusKey,
-      fillColor
-    ]
-    of Object.entries(
-      STATUS_COLORS
-    )
-  ) {
-    for (
-      const [
-        specialKey,
-        borderColor
-      ]
-      of Object.entries(
-        BORDER_COLORS
-      )
-    ) {
-      createParkingIcon(
-        `parking-${statusKey}-${specialKey}`,
-        fillColor,
-        borderColor
-      );
-    }
-  }
-}
-
 /* =====================================================
-   Source / high-zoom layer
+   Source / high-zoom dot layer
 ===================================================== */
 
 function ensureParkingSourceAndLayer() {
-  registerParkingIcons();
-
   if (
     !map.getSource(
       "parking-source"
@@ -2113,45 +2103,75 @@ function ensureParkingSourceAndLayer() {
     map.addLayer({
       id: "parking-layer",
 
-      type: "symbol",
+      type: "circle",
 
       source: "parking-source",
 
-      layout: {
-        "icon-image": [
-          "concat",
-          "parking-",
+      paint: {
+        /*
+          圓點內部顏色：
+          綠 = 空車格
+          紅 = 已停車
+          灰 = 狀態未知
+        */
+        "circle-color": [
+          "match",
           ["get", "statusKey"],
-          "-",
-          ["get", "specialKey"]
+
+          "empty",
+          "#22c55e",
+
+          "occupied",
+          "#ef4444",
+
+          "#9ca3af"
         ],
 
-        "icon-size": [
+        "circle-radius": [
           "interpolate",
           ["linear"],
           ["zoom"],
 
-          16.8, 0.72,
-          18, 0.96,
-          19, 1.15
+          16.8, 4.5,
+          18, 6,
+          19, 7.5
         ],
 
-        "icon-rotate": [
-          "get",
-          "rotation"
+        /*
+          圓點外框：
+          藍 = 身障
+          橘 = 貨車 / 裝卸
+          紫 = 婦幼 / 親子
+          白 = 一般
+        */
+        "circle-stroke-color": [
+          "match",
+          ["get", "specialKey"],
+
+          "disabled",
+          "#2563eb",
+
+          "loading",
+          "#f59e0b",
+
+          "family",
+          "#d946ef",
+
+          "#ffffff"
         ],
 
-        "icon-rotation-alignment":
-          "map",
+        "circle-stroke-width": [
+          "match",
+          ["get", "specialKey"],
 
-        "icon-pitch-alignment":
-          "map",
+          "normal",
+          1.8,
 
-        "icon-allow-overlap":
-          true,
+          3
+        ],
 
-        "icon-ignore-placement":
-          true
+        "circle-opacity":
+          0.96
       }
     });
   }
@@ -2167,7 +2187,7 @@ function buildIndividualFeatureCollection(
       list.map(
         parking => {
           /*
-            v1.0.6：
+            v1.0.7：
             完全使用政府 API 原始座標。
             不做道路吸附、不移動位置、不依道路旋轉。
           */
@@ -2284,14 +2304,10 @@ function buildGradient(
     100;
 
   return `
-    linear-gradient(
-      to right,
-      #22c55e 0%,
-      #22c55e ${emptyEnd}%,
-      #ef4444 ${emptyEnd}%,
-      #ef4444 ${occupiedEnd}%,
-      #9ca3af ${occupiedEnd}%,
-      #9ca3af 100%
+    conic-gradient(
+      #22c55e 0% ${emptyEnd}%,
+      #ef4444 ${emptyEnd}% ${occupiedEnd}%,
+      #9ca3af ${occupiedEnd}% 100%
     )
   `;
 }
@@ -2430,7 +2446,7 @@ function renderGroupedParking(
         group.items.length;
 
       /*
-        v1.0.6：
+        v1.0.7：
         群組色帶也不再依道路旋轉。
       */
       const rotation =
@@ -2442,7 +2458,7 @@ function renderGroupedParking(
         );
 
       element.className =
-        "group-parking-bar";
+        "group-parking-dot";
 
       element.style.background =
         buildGradient(
@@ -3210,13 +3226,62 @@ clearAllButton.addEventListener(
 
 reloadButton.addEventListener(
   "click",
-  refreshLiveParking
+  () => {
+    refreshLiveParking({
+      silent: false
+    });
+  }
 );
 
 locateButton.addEventListener(
   "click",
   moveToUserLocation
 );
+
+
+/* =====================================================
+   Hide UI while map is moving
+===================================================== */
+
+let uiReturnTimer =
+  null;
+
+function hideMapUI() {
+  clearTimeout(
+    uiReturnTimer
+  );
+
+  /*
+    側邊選單若已開啟，拖動地圖時直接收起。
+  */
+  closeMenu();
+
+  document
+    .getElementById("app")
+    .classList
+    .add(
+      "map-ui-moving"
+    );
+}
+
+function showMapUI() {
+  clearTimeout(
+    uiReturnTimer
+  );
+
+  uiReturnTimer =
+    setTimeout(
+      () => {
+        document
+          .getElementById("app")
+          .classList
+          .remove(
+            "map-ui-moving"
+          );
+      },
+      90
+    );
+}
 
 /* =====================================================
    Map load
@@ -3277,42 +3342,72 @@ map.on(
     locateUser();
 
     /*
-      v1.0.6：
-      第一次開啟頁面就直接打 Vercel Live API，
-      讓紅 / 綠 / 灰狀態一進頁面就使用最新資料。
+      v1.0.7：
+      先顯示 GitHub Pages 部署時已產生好的 parking.json。
+      使用者先看到停車格，不必等 Vercel / 政府 API。
 
-      只有 Live API 失敗時，才讀 GitHub parking.json 當備援。
+      第一版畫面出現後，再於背景讀取最新狀態。
     */
-    const liveLoaded =
-      await refreshLiveParking();
+    try {
+      await loadStaticParking();
 
-    if (
-      !liveLoaded
-    ) {
-      try {
-        await loadStaticParking();
+      setTimeout(
+        () => {
+          refreshLiveParking({
+            silent: true
+          });
+        },
+        180
+      );
+    }
+    catch (error) {
+      console.error(error);
 
-        bottomStatus.textContent =
-          "即時 API 連線失敗，目前顯示 GitHub 備援資料";
-      }
-      catch (error) {
-        console.error(error);
-
-        bottomStatus.textContent =
-          "目前無法取得停車格資料";
-      }
+      /*
+        如果部署快照不存在，
+        才直接等待 Live API。
+      */
+      await refreshLiveParking({
+        silent: false
+      });
     }
   }
 );
 
 map.on(
+  "movestart",
+  hideMapUI
+);
+
+map.on(
+  "dragstart",
+  hideMapUI
+);
+
+map.on(
+  "zoomstart",
+  hideMapUI
+);
+
+map.on(
   "moveend",
-  renderParking
+  () => {
+    renderParking();
+    showMapUI();
+  }
+);
+
+map.on(
+  "dragend",
+  showMapUI
 );
 
 map.on(
   "zoomend",
-  renderParking
+  () => {
+    renderParking();
+    showMapUI();
+  }
 );
 
 map.on(
