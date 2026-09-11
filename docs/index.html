@@ -10,30 +10,67 @@
   content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
 >
 
-<title>
-智慧路邊停車媒合 APP
-</title>
+<title>智慧路邊停車媒合 APP</title>
 
-<link rel="icon" type="image/png" href="./icons/icon-512.png">
-<link rel="apple-touch-icon" href="./icons/icon-512.png">
-<link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#1677ff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="智慧停車">
+<!-- =====================================================
+     APP ICON
+===================================================== -->
+
+<link
+  rel="icon"
+  type="image/png"
+  href="./icons/icon-512.png"
+>
+
+<link
+  rel="apple-touch-icon"
+  href="./icons/icon-512.png"
+>
+
+<link
+  rel="manifest"
+  href="./manifest.webmanifest"
+>
+
+<meta
+  name="theme-color"
+  content="#1677ff"
+>
+
+<meta
+  name="apple-mobile-web-app-capable"
+  content="yes"
+>
+
+<meta
+  name="apple-mobile-web-app-status-bar-style"
+  content="default"
+>
+
+<meta
+  name="apple-mobile-web-app-title"
+  content="智慧停車"
+>
+
+
+<!-- =====================================================
+     MAPLIBRE
+===================================================== -->
 
 <link
   href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
   rel="stylesheet"
 >
 
-
 <script
   src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js">
 </script>
 
 
-<!-- CSV parser -->
+<!-- =====================================================
+     CSV PARSER
+===================================================== -->
+
 <script
   src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js">
 </script>
@@ -42,121 +79,77 @@
 <style>
 
 
+/* =====================================================
+   BASE
+===================================================== */
+
 * {
-
-  box-sizing:
-    border-box;
-
+  box-sizing: border-box;
 }
 
 
 html,
 body {
+  margin: 0;
+  padding: 0;
 
-  margin:
-    0;
+  width: 100%;
+  height: 100%;
 
-  padding:
-    0;
-
-  width:
-    100%;
-
-  height:
-    100%;
-
-  overflow:
-    hidden;
+  overflow: hidden;
 
   font-family:
-
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     "Noto Sans TC",
     sans-serif;
 
-  background:
-    #f5f5f5;
-
+  background: #f5f5f5;
 }
 
 
 button,
 input {
-
-  font:
-    inherit;
-
+  font: inherit;
 }
 
 
 #app,
 #map {
-
-  width:
-    100%;
-
-  height:
-    100%;
-
+  width: 100%;
+  height: 100%;
 }
 
 
 #app {
-
-  position:
-    relative;
-
-  overflow:
-    hidden;
-
+  position: relative;
+  overflow: hidden;
 }
 
 
 
-/* =========================================================
-   HAMBURGER
-========================================================= */
+/* =====================================================
+   HAMBURGER BUTTON
+===================================================== */
 
 .menu-button {
+  position: absolute;
 
-  position:
-    absolute;
+  top: 18px;
+  right: 18px;
 
-  top:
-    18px;
+  z-index: 30;
 
-  right:
-    18px;
+  width: 48px;
+  height: 48px;
 
-  z-index:
-    30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-
-  width:
-    48px;
-
-  height:
-    48px;
-
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-
-  border:
-    0;
-
-  border-radius:
-    14px;
-
+  border: 0;
+  border-radius: 14px;
 
   background:
     rgba(
@@ -165,7 +158,6 @@ input {
       255,
       0.97
     );
-
 
   box-shadow:
     0
@@ -178,63 +170,115 @@ input {
       0.14
     );
 
-
-  cursor:
-    pointer;
-
+  cursor: pointer;
 }
 
 
 .menu-lines {
+  width: 21px;
 
-  width:
-    21px;
+  display: flex;
+  flex-direction: column;
 
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    5px;
-
+  gap: 5px;
 }
 
 
 .menu-lines span {
+  width: 100%;
+  height: 2px;
 
-  width:
-    100%;
+  border-radius: 999px;
 
-  height:
-    2px;
-
-  border-radius:
-    999px;
-
-  background:
-    #202124;
-
+  background: #202124;
 }
 
 
 
-/* =========================================================
-   BACKDROP
-========================================================= */
+/* =====================================================
+   LOCATE BUTTON
+===================================================== */
+
+.locate-button {
+  position: absolute;
+
+  top: 76px;
+  right: 18px;
+
+  z-index: 30;
+
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 14px;
+
+  background:
+    rgba(
+      255,
+      255,
+      255,
+      0.97
+    );
+
+  color: #1677ff;
+
+  box-shadow:
+    0
+    4px
+    18px
+    rgba(
+      0,
+      0,
+      0,
+      0.14
+    );
+
+  cursor: pointer;
+}
+
+
+.locate-button svg {
+  width: 25px;
+  height: 25px;
+
+  fill: none;
+
+  stroke: currentColor;
+
+  stroke-width: 2.2;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+.locate-button:active {
+  transform: scale(0.96);
+}
+
+
+.locate-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+
+
+/* =====================================================
+   MENU BACKDROP
+===================================================== */
 
 .menu-backdrop {
+  position: absolute;
 
-  position:
-    absolute;
+  inset: 0;
 
-  inset:
-    0;
-
-  z-index:
-    39;
-
+  z-index: 39;
 
   background:
     rgba(
@@ -244,57 +288,37 @@ input {
       0.18
     );
 
+  opacity: 0;
 
-  opacity:
-    0;
-
-
-  pointer-events:
-    none;
-
+  pointer-events: none;
 
   transition:
     opacity
     0.2s
     ease;
-
 }
 
 
 .menu-backdrop.open {
+  opacity: 1;
 
-  opacity:
-    1;
-
-  pointer-events:
-    auto;
-
+  pointer-events: auto;
 }
 
 
 
-/* =========================================================
+/* =====================================================
    SIDE MENU
-========================================================= */
+===================================================== */
 
 .side-menu {
+  position: absolute;
 
-  position:
-    absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
 
-  top:
-    0;
-
-  right:
-    0;
-
-  bottom:
-    0;
-
-
-  z-index:
-    40;
-
+  z-index: 40;
 
   width:
     min(
@@ -302,21 +326,13 @@ input {
       86vw
     );
 
+  padding: 22px;
 
-  padding:
-    22px;
+  overflow-y: auto;
 
-
-  overflow-y:
-    auto;
-
-
-  background:
-    #ffffff;
-
+  background: #ffffff;
 
   box-shadow:
-
     -8px
     0
     32px
@@ -327,231 +343,150 @@ input {
       0.15
     );
 
-
   transform:
     translateX(
       105%
     );
 
-
   transition:
     transform
     0.25s
     ease;
-
 }
 
 
 .side-menu.open {
-
   transform:
     translateX(
       0
     );
-
 }
 
 
 .menu-header {
+  display: flex;
 
-  display:
-    flex;
+  align-items: center;
 
-  align-items:
-    center;
+  justify-content: space-between;
 
-  justify-content:
-    space-between;
-
-
-  margin-bottom:
-    26px;
-
+  margin-bottom: 26px;
 }
 
 
 .menu-title {
+  color: #1f2937;
 
-  color:
-    #1f2937;
-
-
-  font-size:
-    20px;
-
-  font-weight:
-    800;
-
+  font-size: 20px;
+  font-weight: 800;
 }
 
 
 .menu-version {
+  margin-top: 3px;
 
-  margin-top:
-    3px;
+  color: #9ca3af;
 
-
-  color:
-    #9ca3af;
-
-
-  font-size:
-    12px;
-
+  font-size: 12px;
 }
 
 
 .menu-close {
+  width: 38px;
+  height: 38px;
 
-  width:
-    38px;
+  border: 0;
 
-  height:
-    38px;
+  border-radius: 10px;
 
+  background: #f3f4f6;
 
-  border:
-    0;
+  color: #444;
 
-  border-radius:
-    10px;
+  font-size: 22px;
 
-
-  background:
-    #f3f4f6;
-
-
-  color:
-    #444;
-
-
-  font-size:
-    22px;
-
-
-  cursor:
-    pointer;
-
+  cursor: pointer;
 }
 
 
 .menu-section-title {
+  margin-bottom: 10px;
 
-  margin-bottom:
-    10px;
+  color: #6b7280;
 
+  font-size: 12px;
+  font-weight: 700;
 
-  color:
-    #6b7280;
-
-
-  font-size:
-    12px;
-
-  font-weight:
-    700;
-
-
-  letter-spacing:
-    0.06em;
-
+  letter-spacing: 0.06em;
 }
 
 
 
-/* =========================================================
+/* =====================================================
    FILTER
-========================================================= */
+===================================================== */
 
 .filter-list {
+  display: flex;
 
-  display:
-    flex;
+  flex-direction: column;
 
-  flex-direction:
-    column;
-
-  gap:
-    8px;
-
+  gap: 8px;
 }
 
 
 .filter-item {
-
-  min-height:
-    54px;
-
+  min-height: 54px;
 
   padding:
     10px
     12px;
 
+  display: flex;
 
-  display:
-    flex;
+  align-items: center;
 
-  align-items:
-    center;
-
-
-  gap:
-    11px;
-
+  gap: 11px;
 
   border:
     1px
     solid
     #eceff3;
 
+  border-radius: 13px;
 
-  border-radius:
-    13px;
-
-
-  cursor:
-    pointer;
-
+  cursor: pointer;
 }
 
 
 .filter-item:hover {
-
-  background:
-    #f8f9fa;
-
+  background: #f8f9fa;
 }
 
 
 .filter-item input {
+  width: 18px;
+  height: 18px;
 
-  width:
-    18px;
-
-  height:
-    18px;
-
+  cursor: pointer;
 }
 
 
 .filter-space {
+  width: 24px;
+  height: 11px;
 
-  width:
-    22px;
-
-  height:
-    12px;
-
+  flex:
+    0
+    0
+    24px;
 
   border:
     2px
     solid
-    white;
+    #ffffff;
 
-
-  border-radius:
-    3px;
-
+  border-radius: 3px;
 
   box-shadow:
     0
@@ -562,164 +497,132 @@ input {
       0,
       0,
       0,
-      0.12
+      0.13
     );
-
 }
 
 
 .filter-space.green {
-
-  background:
-    #22c55e;
-
+  background: #22c55e;
 }
 
 
 .filter-space.red {
-
-  background:
-    #ef4444;
-
+  background: #ef4444;
 }
 
 
 .filter-space.gray {
-
-  background:
-    #9ca3af;
-
+  background: #9ca3af;
 }
 
 
 .filter-name {
+  flex: 1;
 
-  flex:
-    1;
+  color: #333;
 
-
-  font-size:
-    14px;
-
-
-  font-weight:
-    650;
-
-
-  color:
-    #333;
-
+  font-size: 14px;
+  font-weight: 650;
 }
 
 
 .filter-count {
-
-  min-width:
-    24px;
-
+  min-width: 24px;
 
   padding:
     3px
     7px;
 
+  border-radius: 999px;
 
-  border-radius:
-    999px;
+  background: #f1f3f5;
 
+  color: #777;
 
-  background:
-    #f1f3f5;
+  font-size: 11px;
 
-
-  font-size:
-    11px;
-
-
-  text-align:
-    center;
-
-
-  color:
-    #777;
-
+  text-align: center;
 }
 
 
 .menu-actions {
+  margin-top: 16px;
 
-  margin-top:
-    16px;
-
-
-  display:
-    grid;
-
+  display: grid;
 
   grid-template-columns:
     1fr
     1fr;
 
-
-  gap:
-    9px;
-
+  gap: 9px;
 }
 
 
 .menu-action {
+  height: 42px;
 
-  height:
-    42px;
+  border: 0;
 
+  border-radius: 11px;
 
-  border:
-    0;
+  background: #f3f4f6;
 
+  color: #333;
 
-  border-radius:
-    11px;
+  font-weight: 650;
 
-
-  background:
-    #f3f4f6;
-
-
-  color:
-    #333;
-
-
-  font-weight:
-    650;
-
-
-  cursor:
-    pointer;
-
+  cursor: pointer;
 }
 
 
 
-/* =========================================================
+/* =====================================================
+   MAP ATTRIBUTION IN MENU
+===================================================== */
+
+.menu-attribution {
+  margin-top: 8px;
+
+  padding: 12px;
+
+  border-radius: 12px;
+
+  background: #f8fafc;
+
+  color: #6b7280;
+
+  font-size: 11px;
+
+  line-height: 1.7;
+}
+
+
+.menu-attribution a {
+  color: #1677ff;
+
+  text-decoration: none;
+}
+
+
+.menu-attribution a:hover {
+  text-decoration: underline;
+}
+
+
+
+/* =====================================================
    BOTTOM CARD
-========================================================= */
+===================================================== */
 
 .bottom-card {
+  position: absolute;
 
-  position:
-    absolute;
+  left: 50%;
 
+  bottom: 18px;
 
-  left:
-    50%;
-
-
-  bottom:
-    18px;
-
-
-  z-index:
-    25;
-
+  z-index: 25;
 
   width:
     min(
@@ -729,14 +632,9 @@ input {
       720px
     );
 
+  padding: 12px;
 
-  padding:
-    12px;
-
-
-  border-radius:
-    18px;
-
+  border-radius: 18px;
 
   background:
     rgba(
@@ -746,9 +644,7 @@ input {
       0.97
     );
 
-
   box-shadow:
-
     0
     8px
     32px
@@ -759,187 +655,120 @@ input {
       0.16
     );
 
-
   backdrop-filter:
     blur(
       8px
     );
 
-
   transform:
     translateX(
       -50%
     );
-
 }
 
 
 .bottom-main {
+  display: flex;
 
-  display:
-    flex;
+  align-items: center;
 
-  align-items:
-    center;
-
-
-  gap:
-    12px;
-
+  gap: 12px;
 }
 
 
 .bottom-info {
+  min-width: 0;
 
-  min-width:
-    0;
-
-
-  flex:
-    1;
-
+  flex: 1;
 }
 
 
 .bottom-count {
+  overflow: hidden;
 
-  overflow:
-    hidden;
+  color: #222;
 
+  font-size: 15px;
 
-  color:
-    #222;
+  font-weight: 750;
 
+  text-overflow: ellipsis;
 
-  font-size:
-    15px;
-
-
-  font-weight:
-    750;
-
-
-  text-overflow:
-    ellipsis;
-
-
-  white-space:
-    nowrap;
-
+  white-space: nowrap;
 }
 
 
 .bottom-status {
+  margin-top: 3px;
 
-  margin-top:
-    3px;
+  overflow: hidden;
 
+  color: #8a8f98;
 
-  overflow:
-    hidden;
+  font-size: 11px;
 
+  text-overflow: ellipsis;
 
-  color:
-    #8a8f98;
-
-
-  font-size:
-    11px;
-
-
-  text-overflow:
-    ellipsis;
-
-
-  white-space:
-    nowrap;
-
+  white-space: nowrap;
 }
 
 
 .refresh-button {
+  min-width: 92px;
 
-  min-width:
-    92px;
-
-
-  height:
-    44px;
-
+  height: 44px;
 
   padding:
     0
     15px;
 
+  flex:
+    0
+    0
+    auto;
 
-  border:
-    0;
+  border: 0;
 
+  border-radius: 12px;
 
-  border-radius:
-    12px;
+  background: #1677ff;
 
+  color: #ffffff;
 
-  background:
-    #1677ff;
+  font-size: 14px;
 
+  font-weight: 700;
 
-  color:
-    #ffffff;
-
-
-  font-size:
-    14px;
-
-
-  font-weight:
-    700;
-
-
-  cursor:
-    pointer;
-
+  cursor: pointer;
 }
 
 
 .refresh-button:disabled {
+  opacity: 0.55;
 
-  opacity:
-    0.55;
-
+  cursor: not-allowed;
 }
 
 
 
-/* =========================================================
-   GPS
-========================================================= */
+/* =====================================================
+   USER LOCATION
+===================================================== */
 
 .user-dot {
-
-  width:
-    18px;
-
-  height:
-    18px;
-
+  width: 18px;
+  height: 18px;
 
   border:
     3px
     solid
-    #fff;
+    #ffffff;
 
+  border-radius: 50%;
 
-  border-radius:
-    50%;
-
-
-  background:
-    #1677ff;
-
+  background: #1677ff;
 
   box-shadow:
-
     0
     0
     0
@@ -950,89 +779,55 @@ input {
       255,
       0.25
     );
-
 }
 
 
 
-/* =========================================================
+/* =====================================================
    POPUP
-========================================================= */
+===================================================== */
 
 .parking-popup {
+  min-width: 220px;
 
-  min-width:
-    220px;
+  font-size: 13px;
 
-
-  font-size:
-    13px;
-
-
-  line-height:
-    1.65;
-
+  line-height: 1.65;
 }
 
 
 .parking-title {
+  margin-bottom: 7px;
 
-  margin-bottom:
-    7px;
+  font-size: 17px;
 
-
-  font-size:
-    17px;
-
-
-  font-weight:
-    800;
-
+  font-weight: 800;
 }
 
 
 .parking-status-line {
+  display: flex;
 
-  display:
-    flex;
+  align-items: center;
 
+  gap: 7px;
 
-  align-items:
-    center;
-
-
-  gap:
-    7px;
-
-
-  margin-bottom:
-    8px;
-
+  margin-bottom: 8px;
 }
 
 
 .popup-space {
-
-  width:
-    23px;
-
-
-  height:
-    12px;
-
+  width: 24px;
+  height: 11px;
 
   border:
     2px
     solid
-    white;
+    #ffffff;
 
-
-  border-radius:
-    3px;
-
+  border-radius: 3px;
 
   box-shadow:
-
     0
     0
     0
@@ -1043,80 +838,62 @@ input {
       0,
       0.15
     );
-
 }
 
 
 .row {
-
   margin:
     3px
     0;
-
 }
 
 
 .navigation-button {
+  width: 100%;
 
-  width:
-    100%;
+  min-height: 42px;
 
-
-  margin-top:
-    12px;
-
+  margin-top: 13px;
 
   padding:
     10px
-    12px;
+    14px;
 
+  border: 0;
 
-  border:
-    0;
+  border-radius: 10px;
 
+  background: #1677ff;
 
-  border-radius:
-    10px;
+  color: #ffffff;
 
+  font-size: 14px;
 
-  background:
-    #1677ff;
+  font-weight: 700;
 
+  cursor: pointer;
 
-  color:
-    #ffffff;
+  display: flex;
 
+  align-items: center;
 
-  font-weight:
-    700;
+  justify-content: center;
 
-
-  cursor:
-    pointer;
-
+  text-align: center;
 }
 
 
 .navigation-button:hover {
-
-  background:
-    #0868e8;
-
+  background: #0868e8;
 }
 
 
 .maplibregl-popup-content {
+  padding: 14px;
 
-  padding:
-    14px;
-
-
-  border-radius:
-    14px;
-
+  border-radius: 14px;
 
   box-shadow:
-
     0
     8px
     28px
@@ -1126,94 +903,83 @@ input {
       0,
       0.16
     );
-
 }
 
 
 /*
-  移除 Popup 右上角 X
+  Popup 不顯示右上角 X
 */
 
 .maplibregl-popup-close-button {
-
-  display:
-    none
-    !important;
-
+  display: none !important;
 }
 
 
 
-/* =========================================================
+/* =====================================================
    MAP CONTROLS
-========================================================= */
+===================================================== */
+
+/*
+  不顯示 MapLibre + / -
+*/
 
 .maplibregl-ctrl-top-left,
 .maplibregl-ctrl-top-right {
-
-  display:
-    none
-    !important;
-
-}
-
-
-.maplibregl-ctrl-bottom-right {
-
-  margin-bottom:
-    92px;
-
+  display: none !important;
 }
 
 
 
-/* =========================================================
+/* =====================================================
    MOBILE
-========================================================= */
+===================================================== */
 
 @media (
   max-width:
   600px
 ) {
 
-
   .menu-button {
+    top: 12px;
+    right: 12px;
 
-    top:
-      12px;
+    width: 44px;
+    height: 44px;
 
-
-    right:
-      12px;
-
-
-    width:
-      44px;
+    border-radius: 13px;
+  }
 
 
-    height:
-      44px;
+  .locate-button {
+    top: 64px;
+    right: 12px;
 
+    width: 44px;
+    height: 44px;
+
+    border-radius: 13px;
+  }
+
+
+  .locate-button svg {
+    width: 23px;
+    height: 23px;
   }
 
 
   .side-menu {
-
     width:
       min(
         320px,
         88vw
       );
 
-
-    padding:
-      19px;
-
+    padding: 19px;
   }
 
 
   .bottom-card {
-
     bottom:
       max(
         10px,
@@ -1222,53 +988,68 @@ input {
         )
       );
 
-
     width:
       calc(
         100% - 20px
       );
 
+    padding: 10px;
 
-    padding:
-      10px;
+    border-radius: 16px;
+  }
 
+
+  .bottom-main {
+    gap: 8px;
   }
 
 
   .bottom-count {
-
-    font-size:
-      13px;
-
+    font-size: 13px;
   }
 
 
   .bottom-status {
-
-    font-size:
-      10px;
-
+    font-size: 10px;
   }
 
 
   .refresh-button {
+    min-width: 76px;
 
-    min-width:
-      76px;
-
-
-    height:
-      42px;
-
+    height: 42px;
 
     padding:
       0
       11px;
 
+    font-size: 13px;
+  }
 
-    font-size:
-      13px;
+}
 
+
+
+/* =====================================================
+   SMALL MOBILE
+===================================================== */
+
+@media (
+  max-width:
+  390px
+) {
+
+  .bottom-count {
+    font-size: 12px;
+  }
+
+
+  .refresh-button {
+    min-width: 70px;
+
+    padding:
+      0
+      9px;
   }
 
 }
@@ -1285,44 +1066,93 @@ input {
 <div id="app">
 
 
+<!-- =====================================================
+     MAP
+===================================================== -->
+
 <div id="map"></div>
+
+
+
+<!-- =====================================================
+     HAMBURGER
+===================================================== -->
 
 <button
   id="menuButton"
   class="menu-button"
   type="button"
+  aria-label="開啟篩選選單"
 >
+
   <div class="menu-lines">
+
     <span></span>
+
     <span></span>
+
     <span></span>
+
   </div>
+
 </button>
+
+
+
+<!-- =====================================================
+     LOCATE
+===================================================== -->
 
 <button
   id="locateButton"
   class="locate-button"
   type="button"
+  aria-label="回到我的位置"
   title="回到我的位置"
 >
-  ⌖
+
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+  >
+
+    <circle
+      cx="12"
+      cy="12"
+      r="4"
+    ></circle>
+
+    <path
+      d="M12 2v3"
+    ></path>
+
+    <path
+      d="M12 19v3"
+    ></path>
+
+    <path
+      d="M2 12h3"
+    ></path>
+
+    <path
+      d="M19 12h3"
+    ></path>
+
+    <circle
+      cx="12"
+      cy="12"
+      r="9"
+    ></circle>
+
+  </svg>
+
 </button>
 
 
-<div class="menu-lines">
 
-<span></span>
-
-<span></span>
-
-<span></span>
-
-</div>
-
-
-</button>
-
-
+<!-- =====================================================
+     MENU BACKDROP
+===================================================== -->
 
 <div
   id="menuBackdrop"
@@ -1331,287 +1161,341 @@ input {
 
 
 
+<!-- =====================================================
+     SIDE MENU
+===================================================== -->
+
 <aside
   id="sideMenu"
   class="side-menu"
 >
 
 
-<div class="menu-header">
+  <div class="menu-header">
 
 
-<div>
+    <div>
 
 
-<div class="menu-title">
+      <div class="menu-title">
 
-停車格篩選
+        停車格篩選
 
-</div>
+      </div>
 
 
-<div class="menu-version">
+      <div class="menu-version">
 
-智慧停車 APP v1.0.4
+        智慧停車 APP v1.0.4
 
-</div>
+      </div>
 
 
-</div>
+    </div>
 
 
 
-<button
-  id="menuClose"
-  class="menu-close"
->
+    <button
+      id="menuClose"
+      class="menu-close"
+      type="button"
+    >
 
-×
+      ×
 
-</button>
+    </button>
 
 
-</div>
+  </div>
 
 
 
-<div class="menu-section-title">
+  <div class="menu-section-title">
 
-顯示停車格狀態
+    顯示停車格狀態
 
-</div>
+  </div>
 
 
 
-<div class="filter-list">
+  <div class="filter-list">
 
 
-<label class="filter-item">
+    <label class="filter-item">
 
 
-<input
-  id="filterEmpty"
-  type="checkbox"
-  checked
->
+      <input
+        id="filterEmpty"
+        type="checkbox"
+        checked
+      >
 
 
-<span
-  class="filter-space green"
-></span>
+      <span
+        class="filter-space green"
+      ></span>
 
 
-<span class="filter-name">
+      <span class="filter-name">
 
-空白停車格
+        空白停車格
 
-</span>
+      </span>
 
 
-<span
-  id="emptyCount"
-  class="filter-count"
->
-0
-</span>
+      <span
+        id="emptyCount"
+        class="filter-count"
+      >
 
+        0
 
-</label>
+      </span>
 
 
+    </label>
 
-<label class="filter-item">
 
 
-<input
-  id="filterOccupied"
-  type="checkbox"
-  checked
->
+    <label class="filter-item">
 
 
-<span
-  class="filter-space red"
-></span>
+      <input
+        id="filterOccupied"
+        type="checkbox"
+        checked
+      >
 
 
-<span class="filter-name">
+      <span
+        class="filter-space red"
+      ></span>
 
-已有停車
 
-</span>
+      <span class="filter-name">
 
+        已有停車
 
-<span
-  id="occupiedCount"
-  class="filter-count"
->
-0
-</span>
+      </span>
 
 
-</label>
+      <span
+        id="occupiedCount"
+        class="filter-count"
+      >
 
+        0
 
+      </span>
 
-<label class="filter-item">
 
+    </label>
 
-<input
-  id="filterUnknown"
-  type="checkbox"
-  checked
->
 
 
-<span
-  class="filter-space gray"
-></span>
+    <label class="filter-item">
 
 
-<span class="filter-name">
+      <input
+        id="filterUnknown"
+        type="checkbox"
+        checked
+      >
 
-狀態未知
 
-</span>
+      <span
+        class="filter-space gray"
+      ></span>
 
 
-<span
-  id="unknownCount"
-  class="filter-count"
->
-0
-</span>
+      <span class="filter-name">
 
+        狀態未知
 
-</label>
+      </span>
 
 
-</div>
+      <span
+        id="unknownCount"
+        class="filter-count"
+      >
 
+        0
 
+      </span>
 
-<div class="menu-actions">
 
+    </label>
 
-<button
-  id="selectAllButton"
-  class="menu-action"
->
 
-全部顯示
+  </div>
 
-</button>
 
 
-<button
-  id="clearAllButton"
-  class="menu-action"
->
+  <div class="menu-actions">
 
-全部隱藏
 
-</button>
+    <button
+      id="selectAllButton"
+      class="menu-action"
+      type="button"
+    >
 
+      全部顯示
 
-</div>
+    </button>
 
-<div class="menu-section-title" style="margin-top:24px;">
-  地圖資料來源
-</div>
 
-<div class="menu-attribution">
-  Map data:
-  <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a> /
-  <a href="https://www.openmaptiles.org/" target="_blank">© OpenMapTiles</a> /
-  <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>
-</div>
+    <button
+      id="clearAllButton"
+      class="menu-action"
+      type="button"
+    >
+
+      全部隱藏
+
+    </button>
+
+
+  </div>
+
+
+
+  <!-- =================================================
+       MAP ATTRIBUTION
+  ================================================== -->
+
+  <div
+    class="menu-section-title"
+    style="margin-top:28px;"
+  >
+
+    地圖資料來源
+
+  </div>
+
+
+  <div class="menu-attribution">
+
+    Map data：
+
+    <a
+      href="https://openfreemap.org/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      OpenFreeMap
+    </a>
+
+    ·
+
+    <a
+      href="https://www.openmaptiles.org/"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      © OpenMapTiles
+    </a>
+
+    ·
+
+    <a
+      href="https://www.openstreetmap.org/copyright"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      OpenStreetMap
+    </a>
+
+  </div>
+
 
 </aside>
 
 
 
+<!-- =====================================================
+     BOTTOM PANEL
+===================================================== -->
+
 <div class="bottom-card">
 
 
-<div class="bottom-main">
+  <div class="bottom-main">
 
 
-<div class="bottom-info">
+    <div class="bottom-info">
 
 
-<div
-  id="bottomCount"
-  class="bottom-count"
->
+      <div
+        id="bottomCount"
+        class="bottom-count"
+      >
 
-正在準備停車格資料…
+        正在準備停車格資料…
+
+      </div>
+
+
+      <div
+        id="bottomStatus"
+        class="bottom-status"
+      >
+
+        APP v1.0.4
+
+      </div>
+
+
+    </div>
+
+
+
+    <button
+      id="reloadButton"
+      class="refresh-button"
+      type="button"
+    >
+
+      重新整理
+
+    </button>
+
+
+  </div>
+
 
 </div>
 
 
-<div
-  id="bottomStatus"
-  class="bottom-status"
->
-
-APP v1.0.4
-
 </div>
 
-
-</div>
-
-
-
-<button
-  id="reloadButton"
-  class="refresh-button"
->
-
-重新整理
-
-</button>
-
-
-</div>
-
-
-</div>
-
-
-</div>
 
 
 <script>
 
 
-/* =========================================================
+/* =====================================================
    VERSION
-========================================================= */
+===================================================== */
 
 const APP_VERSION =
   "1.0.4";
 
 
 
-/* =========================================================
+/* =====================================================
    LIVE API
-
-   Cloudflare Worker 建立後
-   將這裡換成：
-
-   https://xxxx.workers.dev/parking
-========================================================= */
+===================================================== */
 
 const LIVE_API_URL =
   "https://smart-parking-app-api.vercel.app/api/parking";
 
 
 
-/* =========================================================
+/* =====================================================
    CONFIG
-========================================================= */
+===================================================== */
 
 const DEFAULT_CENTER = [
 
@@ -1631,14 +1515,13 @@ const MAX_VISIBLE_MARKERS =
 
 
 const MAP_STYLE_URL =
-
   "https://tiles.openfreemap.org/styles/liberty";
 
 
 
-/* =========================================================
+/* =====================================================
    DOM
-========================================================= */
+===================================================== */
 
 const menuButton =
   document.getElementById(
@@ -1661,6 +1544,12 @@ const menuBackdrop =
 const sideMenu =
   document.getElementById(
     "sideMenu"
+  );
+
+
+const locateButton =
+  document.getElementById(
+    "locateButton"
   );
 
 
@@ -1731,9 +1620,9 @@ const clearAllButton =
 
 
 
-/* =========================================================
+/* =====================================================
    STATE
-========================================================= */
+===================================================== */
 
 let parkingData =
   [];
@@ -1752,9 +1641,9 @@ let styleSimplified =
 
 
 
-/* =========================================================
+/* =====================================================
    MAP
-========================================================= */
+===================================================== */
 
 const map =
 
@@ -1784,6 +1673,12 @@ const map =
     maxZoom:
       19,
 
+    /*
+      不顯示右下角 attribution。
+
+      attribution 仍保留於漢堡選單內。
+    */
+
     attributionControl:
       false,
 
@@ -1800,24 +1695,9 @@ const map =
 
 
 
-map.addControl(
-
-  new maplibregl.AttributionControl({
-
-    compact:
-      true
-
-  }),
-
-  "bottom-right"
-
-);
-
-
-
-/* =========================================================
+/* =====================================================
    MENU
-========================================================= */
+===================================================== */
 
 function openMenu() {
 
@@ -1835,6 +1715,7 @@ function openMenu() {
     );
 
 }
+
 
 
 function closeMenu() {
@@ -1855,6 +1736,7 @@ function closeMenu() {
 }
 
 
+
 menuButton.addEventListener(
 
   "click",
@@ -1864,6 +1746,7 @@ menuButton.addEventListener(
 );
 
 
+
 menuClose.addEventListener(
 
   "click",
@@ -1871,6 +1754,7 @@ menuClose.addEventListener(
   closeMenu
 
 );
+
 
 
 menuBackdrop.addEventListener(
@@ -1883,9 +1767,32 @@ menuBackdrop.addEventListener(
 
 
 
-/* =========================================================
+document.addEventListener(
+
+  "keydown",
+
+  event => {
+
+
+    if (
+      event.key ===
+      "Escape"
+    ) {
+
+
+      closeMenu();
+
+    }
+
+  }
+
+);
+
+
+
+/* =====================================================
    COMMON
-========================================================= */
+===================================================== */
 
 function getValue(
 
@@ -1978,9 +1885,9 @@ function escapeHTML(
 
 
 
-/* =========================================================
-   MAP STYLE
-========================================================= */
+/* =====================================================
+   CLEAN MAP STYLE
+===================================================== */
 
 function simplifyMapStyle() {
 
@@ -1999,8 +1906,13 @@ function simplifyMapStyle() {
 
 
   if (
-    !style ||
+
+    !style
+
+    ||
+
     !style.layers
+
   ) {
 
     return;
@@ -2062,10 +1974,13 @@ function simplifyMapStyle() {
 
 
     const keyword =
-
       `${id} ${sourceLayer}`;
 
 
+
+    /*
+      3D 建築全部隱藏
+    */
 
     if (
       type ===
@@ -2091,7 +2006,6 @@ function simplifyMapStyle() {
 
 
     const isBackground =
-
       type ===
       "background";
 
@@ -2169,6 +2083,10 @@ function simplifyMapStyle() {
 
 
 
+    /*
+      保留店家 POI
+    */
+
     const isShopLabel =
 
       /poi|shop|store|amenity|commercial|retail|restaurant|cafe|food|bank|hospital|pharmacy|hotel/
@@ -2185,17 +2103,29 @@ function simplifyMapStyle() {
 
     const keep =
 
-      isBackground ||
+      isBackground
 
-      isWater ||
+      ||
 
-      isLand ||
+      isWater
 
-      isBuilding ||
+      ||
 
-      isRoadGeometry ||
+      isLand
 
-      isRoadLabel ||
+      ||
+
+      isBuilding
+
+      ||
+
+      isRoadGeometry
+
+      ||
+
+      isRoadLabel
+
+      ||
 
       isShopLabel;
 
@@ -2223,9 +2153,9 @@ function simplifyMapStyle() {
 
 
 
-/* =========================================================
+/* =====================================================
    STATUS
-========================================================= */
+===================================================== */
 
 function analyzeSingleStatus(
   value
@@ -2233,16 +2163,21 @@ function analyzeSingleStatus(
 
 
   if (
+
     value ===
     undefined
+
     ||
+
     value ===
     null
+
   ) {
 
     return null;
 
   }
+
 
 
   const normalized =
@@ -2336,14 +2271,21 @@ function analyzeSingleStatus(
   const emptyKeywords = [
 
     "空位",
+
     "空車位",
+
     "無車",
+
     "可停",
+
     "空車",
 
     "available",
+
     "empty",
+
     "vacant",
+
     "free"
 
   ];
@@ -2353,12 +2295,17 @@ function analyzeSingleStatus(
   const occupiedKeywords = [
 
     "有車",
+
     "已停",
+
     "占用",
+
     "佔用",
 
     "occupied",
+
     "full",
+
     "busy"
 
   ];
@@ -2493,9 +2440,9 @@ function getAvailability(
 
 
 
-/* =========================================================
-   NORMALIZE
-========================================================= */
+/* =====================================================
+   NORMALIZE PARKING DATA
+===================================================== */
 
 function normalizeParking(
   raw
@@ -2503,6 +2450,7 @@ function normalizeParking(
 
 
   const lat =
+
     Number(
 
       getValue(
@@ -2510,14 +2458,19 @@ function normalizeParking(
         raw,
 
         "latitude",
+
         "Latitude",
+
         "LATITUDE",
 
         "lat",
+
         "LAT",
 
         "定位坐標[緯度]",
+
         "定位坐標 [緯度]",
+
         "緯度"
 
       )
@@ -2527,6 +2480,7 @@ function normalizeParking(
 
 
   const lng =
+
     Number(
 
       getValue(
@@ -2534,17 +2488,23 @@ function normalizeParking(
         raw,
 
         "longitude",
+
         "Longitude",
+
         "LONGITUDE",
 
         "lng",
+
         "lon",
 
         "LNG",
+
         "LON",
 
         "定位坐標[經度]",
+
         "定位坐標 [經度]",
+
         "經度"
 
       )
@@ -2610,7 +2570,9 @@ function normalizeParking(
           raw,
 
           "id",
+
           "ID",
+
           "系統編號"
 
         )
@@ -2627,8 +2589,11 @@ function normalizeParking(
           raw,
 
           "cellid",
+
           "CELLID",
+
           "CellID",
+
           "車格編號"
 
         )
@@ -2645,7 +2610,9 @@ function normalizeParking(
           raw,
 
           "name",
+
           "NAME",
+
           "類型"
 
         )
@@ -2662,8 +2629,11 @@ function normalizeParking(
           raw,
 
           "roadname",
+
           "ROADNAME",
+
           "RoadName",
+
           "路段名稱"
 
         )
@@ -2680,7 +2650,9 @@ function normalizeParking(
           raw,
 
           "hour",
+
           "HOUR",
+
           "開放停車時間說明"
 
         )
@@ -2697,7 +2669,9 @@ function normalizeParking(
           raw,
 
           "pay",
+
           "PAY",
+
           "收費方式"
 
         )
@@ -2714,7 +2688,9 @@ function normalizeParking(
           raw,
 
           "paycash",
+
           "PAYCASH",
+
           "收費計價"
 
         )
@@ -2731,8 +2707,11 @@ function normalizeParking(
           raw,
 
           "cellstatus",
+
           "CELLSTATUS",
+
           "CellStatus",
+
           "車格狀態"
 
         )
@@ -2749,8 +2728,11 @@ function normalizeParking(
           raw,
 
           "parkingstatus",
+
           "PARKINGSTATUS",
+
           "ParkingStatus",
+
           "停車狀態"
 
         )
@@ -2775,21 +2757,15 @@ function normalizeParking(
 
 
   parking.markerColor =
-
     availability.color;
 
 
-
   parking.statusKey =
-
     availability.key;
 
 
-
   parking.displayStatus =
-
     availability.label;
-
 
 
   return parking;
@@ -2798,9 +2774,9 @@ function normalizeParking(
 
 
 
-/* =========================================================
-   PARSE LIVE CSV
-========================================================= */
+/* =====================================================
+   CSV
+===================================================== */
 
 function parseLiveCSV(
   csvText
@@ -2841,9 +2817,9 @@ function parseLiveCSV(
 
 
 
-/* =========================================================
-   LOAD STATIC
-========================================================= */
+/* =====================================================
+   LOAD STATIC GITHUB DATA
+===================================================== */
 
 async function loadStaticParking() {
 
@@ -2881,7 +2857,6 @@ async function loadStaticParking() {
 
 
   const result =
-
     await response.json();
 
 
@@ -2910,12 +2885,9 @@ async function loadStaticParking() {
 
 
 
-/* =========================================================
+/* =====================================================
    LIVE REFRESH
-
-   使用者按重新整理時
-   直接重新打政府 API
-========================================================= */
+===================================================== */
 
 async function refreshLiveParking() {
 
@@ -2975,7 +2947,6 @@ async function refreshLiveParking() {
 
 
     const csvText =
-
       await response.text();
 
 
@@ -3009,7 +2980,6 @@ async function refreshLiveParking() {
 
 
     const now =
-
       new Date();
 
 
@@ -3057,9 +3027,9 @@ async function refreshLiveParking() {
 
 
 
-/* =========================================================
-   RECTANGLE ICON
-========================================================= */
+/* =====================================================
+   PARKING RECTANGLE ICON
+===================================================== */
 
 function createParkingIcon(
 
@@ -3071,7 +3041,7 @@ function createParkingIcon(
 
 
   const width =
-    28;
+    36;
 
 
   const height =
@@ -3104,8 +3074,22 @@ function createParkingIcon(
 
 
 
+  ctx.clearRect(
+
+    0,
+
+    0,
+
+    width,
+
+    height
+
+  );
+
+
+
   /*
-    外框
+    白色外框
   */
 
   ctx.fillStyle =
@@ -3127,7 +3111,7 @@ function createParkingIcon(
 
 
   /*
-    車位本體
+    車格顏色
   */
 
   ctx.fillStyle =
@@ -3180,7 +3164,7 @@ function createParkingIcon(
       {
 
         pixelRatio:
-          2
+          1
 
       }
 
@@ -3192,9 +3176,739 @@ function createParkingIcon(
 
 
 
-/* =========================================================
-   SOURCE
-========================================================= */
+/* =====================================================
+   ROAD ALIGNMENT
+===================================================== */
+
+function hashString(
+  str
+) {
+
+
+  let hash =
+    0;
+
+
+  const text =
+    String(
+      str ||
+      ""
+    );
+
+
+
+  for (
+
+    let i =
+      0;
+
+    i <
+    text.length;
+
+    i++
+
+  ) {
+
+
+    hash =
+
+      (
+        (
+          hash << 5
+        )
+
+        -
+
+        hash
+
+      )
+
+      +
+
+      text.charCodeAt(
+        i
+      );
+
+
+    hash |=
+      0;
+
+  }
+
+
+  return Math.abs(
+    hash
+  );
+
+}
+
+
+
+/* =====================================================
+   NEAREST POINT ON ROAD SEGMENT
+===================================================== */
+
+function nearestPointOnSegment(
+
+  point,
+
+  a,
+
+  b
+
+) {
+
+
+  const abX =
+    b.x -
+    a.x;
+
+
+  const abY =
+    b.y -
+    a.y;
+
+
+  const apX =
+    point.x -
+    a.x;
+
+
+  const apY =
+    point.y -
+    a.y;
+
+
+
+  const abLengthSquared =
+
+    abX *
+    abX
+
+    +
+
+    abY *
+    abY;
+
+
+
+  if (
+    abLengthSquared ===
+    0
+  ) {
+
+
+    return {
+
+      point: {
+
+        x:
+          a.x,
+
+        y:
+          a.y
+
+      },
+
+
+      distance:
+
+        Math.hypot(
+
+          point.x -
+          a.x,
+
+          point.y -
+          a.y
+
+        )
+
+    };
+
+  }
+
+
+
+  let t =
+
+    (
+      apX *
+      abX
+
+      +
+
+      apY *
+      abY
+
+    )
+
+    /
+
+    abLengthSquared;
+
+
+
+  t =
+
+    Math.max(
+
+      0,
+
+      Math.min(
+        1,
+        t
+      )
+
+    );
+
+
+
+  const nearest = {
+
+    x:
+
+      a.x
+
+      +
+
+      abX *
+      t,
+
+
+    y:
+
+      a.y
+
+      +
+
+      abY *
+      t
+
+  };
+
+
+
+  return {
+
+    point:
+      nearest,
+
+
+    distance:
+
+      Math.hypot(
+
+        point.x -
+        nearest.x,
+
+        point.y -
+        nearest.y
+
+      )
+
+  };
+
+}
+
+
+
+/* =====================================================
+   FIND NEAREST ROAD
+===================================================== */
+
+function getNearestRoadInfo(
+  parking
+) {
+
+
+  const point =
+
+    map.project(
+
+      [
+
+        parking.lng,
+
+        parking.lat
+
+      ]
+
+    );
+
+
+
+  /*
+    在車格附近找道路
+  */
+
+  const searchRadius =
+    45;
+
+
+
+  const features =
+
+    map.queryRenderedFeatures(
+
+      [
+
+        [
+
+          point.x -
+          searchRadius,
+
+          point.y -
+          searchRadius
+
+        ],
+
+        [
+
+          point.x +
+          searchRadius,
+
+          point.y +
+          searchRadius
+
+        ]
+
+      ]
+
+    );
+
+
+
+  let best =
+    null;
+
+
+
+  for (
+    const feature
+    of
+    features
+  ) {
+
+
+    if (
+      !feature.geometry
+    ) {
+
+      continue;
+
+    }
+
+
+
+    /*
+      只接受道路相關圖層
+    */
+
+    const layerID =
+
+      String(
+
+        feature.layer?.id
+
+        ||
+
+        ""
+
+      )
+
+      .toLowerCase();
+
+
+
+    const sourceLayer =
+
+      String(
+
+        feature.layer?.[
+          "source-layer"
+        ]
+
+        ||
+
+        ""
+
+      )
+
+      .toLowerCase();
+
+
+
+    const roadKeyword =
+
+      `${layerID} ${sourceLayer}`;
+
+
+
+    if (
+
+      !/road|street|highway|transport|motorway|trunk|primary|secondary|tertiary|residential|service|bridge|tunnel/
+
+        .test(
+          roadKeyword
+        )
+
+    ) {
+
+
+      continue;
+
+    }
+
+
+
+    let lines =
+      [];
+
+
+
+    if (
+      feature.geometry.type ===
+      "LineString"
+    ) {
+
+
+      lines =
+
+        [
+          feature.geometry.coordinates
+        ];
+
+
+    }
+
+    else if (
+      feature.geometry.type ===
+      "MultiLineString"
+    ) {
+
+
+      lines =
+
+        feature.geometry.coordinates;
+
+
+    }
+
+    else {
+
+
+      continue;
+
+    }
+
+
+
+    for (
+      const line
+      of
+      lines
+    ) {
+
+
+      for (
+
+        let i =
+          0;
+
+        i <
+        line.length - 1;
+
+        i++
+
+      ) {
+
+
+        const aLngLat =
+          line[i];
+
+
+        const bLngLat =
+          line[i + 1];
+
+
+
+        const a =
+          map.project(
+            aLngLat
+          );
+
+
+        const b =
+          map.project(
+            bLngLat
+          );
+
+
+
+        const nearest =
+
+          nearestPointOnSegment(
+
+            point,
+
+            a,
+
+            b
+
+          );
+
+
+
+        if (
+
+          !best
+
+          ||
+
+          nearest.distance <
+          best.distance
+
+        ) {
+
+
+          const angle =
+
+            Math.atan2(
+
+              b.y -
+              a.y,
+
+              b.x -
+              a.x
+
+            )
+
+            *
+
+            180
+
+            /
+
+            Math.PI;
+
+
+
+          best = {
+
+            distance:
+              nearest.distance,
+
+
+            nearest:
+              nearest.point,
+
+
+            bearing:
+              angle
+
+          };
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+
+  return best;
+
+}
+
+
+
+/* =====================================================
+   MOVE PARKING SPACE TO ROAD SIDE
+===================================================== */
+
+function getAlignedParkingDisplay(
+  parking
+) {
+
+
+  const roadInfo =
+
+    getNearestRoadInfo(
+      parking
+    );
+
+
+
+  /*
+    找不到道路就使用原始座標
+  */
+
+  if (
+    !roadInfo
+  ) {
+
+
+    return {
+
+      lng:
+        parking.lng,
+
+      lat:
+        parking.lat,
+
+      rotation:
+        0
+
+    };
+
+  }
+
+
+
+  /*
+    依車格 ID 穩定分配到道路左 / 右側
+  */
+
+  const hash =
+
+    hashString(
+
+      parking.cellId
+
+      ||
+
+      parking.id
+
+      ||
+
+      `${parking.lng},${parking.lat}`
+
+    );
+
+
+
+  const side =
+
+    hash %
+    2 ===
+    0
+
+      ? 1
+
+      : -1;
+
+
+
+  /*
+    從道路中心線往外移
+  */
+
+  const offsetPixels =
+    13;
+
+
+
+  const perpendicularAngle =
+
+    (
+      roadInfo.bearing
+
+      +
+
+      (
+        side >
+        0
+
+          ? 90
+
+          : -90
+      )
+    )
+
+    *
+
+    Math.PI
+
+    /
+
+    180;
+
+
+
+  const targetX =
+
+    roadInfo.nearest.x
+
+    +
+
+    Math.cos(
+      perpendicularAngle
+    )
+
+    *
+
+    offsetPixels;
+
+
+
+  const targetY =
+
+    roadInfo.nearest.y
+
+    +
+
+    Math.sin(
+      perpendicularAngle
+    )
+
+    *
+
+    offsetPixels;
+
+
+
+  const lngLat =
+
+    map.unproject(
+
+      [
+
+        targetX,
+
+        targetY
+
+      ]
+
+    );
+
+
+
+  return {
+
+    lng:
+      lngLat.lng,
+
+    lat:
+      lngLat.lat,
+
+    /*
+      長方形方向跟道路一致
+    */
+
+    rotation:
+      roadInfo.bearing
+
+  };
+
+}
+
+
+
+/* =====================================================
+   SOURCE + LAYER
+===================================================== */
 
 function ensureParkingSourceAndLayer() {
 
@@ -3289,6 +4003,7 @@ function ensureParkingSourceAndLayer() {
         "icon-image":
 
           [
+
             "match",
 
             [
@@ -3303,12 +4018,19 @@ function ensureParkingSourceAndLayer() {
             "parking-occupied",
 
             "parking-unknown"
+
           ],
 
+
+
+        /*
+          隨 Zoom 放大
+        */
 
         "icon-size":
 
           [
+
             "interpolate",
 
             [
@@ -3320,19 +4042,47 @@ function ensureParkingSourceAndLayer() {
             ],
 
             14,
-            0.8,
+            0.62,
 
             16,
-            1,
+            0.80,
 
             18,
-            1.3
+            1.05,
+
+            19,
+            1.20
 
           ],
 
 
+
+        /*
+          跟道路同方向
+        */
+
+        "icon-rotate":
+
+          [
+            "get",
+            "rotation"
+          ],
+
+
+
+        "icon-rotation-alignment":
+          "map",
+
+
+
+        "icon-pitch-alignment":
+          "map",
+
+
+
         "icon-allow-overlap":
           true,
+
 
 
         "icon-ignore-placement":
@@ -3348,9 +4098,9 @@ function ensureParkingSourceAndLayer() {
 
 
 
-/* =========================================================
+/* =====================================================
    GEOJSON
-========================================================= */
+===================================================== */
 
 function buildFeatureCollection(
   list
@@ -3367,91 +4117,121 @@ function buildFeatureCollection(
 
       list.map(
 
-        parking => ({
-
-          type:
-            "Feature",
+        parking => {
 
 
-          geometry: {
+          const aligned =
+
+            getAlignedParkingDisplay(
+              parking
+            );
+
+
+
+          return {
 
             type:
-              "Point",
-
-            coordinates: [
-
-              parking.lng,
-
-              parking.lat
-
-            ]
-
-          },
+              "Feature",
 
 
-          properties: {
+            geometry: {
+
+              type:
+                "Point",
 
 
-            id:
-              parking.id ||
-              "",
+              coordinates: [
+
+                aligned.lng,
+
+                aligned.lat
+
+              ]
+
+            },
 
 
-            cellId:
-              parking.cellId ||
-              "",
+            properties: {
 
 
-            roadName:
-              parking.roadName ||
-              "",
+              id:
+                parking.id ||
+                "",
 
 
-            name:
-              parking.name ||
-              "",
+              cellId:
+                parking.cellId ||
+                "",
 
 
-            pay:
-              parking.pay ||
-              "",
+              roadName:
+                parking.roadName ||
+                "",
 
 
-            payCash:
-              parking.payCash ||
-              "",
+              name:
+                parking.name ||
+                "",
 
 
-            hour:
-              parking.hour ||
-              "",
+              pay:
+                parking.pay ||
+                "",
 
 
-            statusKey:
-              parking.statusKey ||
-              "unknown",
+              payCash:
+                parking.payCash ||
+                "",
 
 
-            displayStatus:
-              parking.displayStatus ||
-              "狀態未知",
+              hour:
+                parking.hour ||
+                "",
 
 
-            markerColor:
-              parking.markerColor ||
-              "#9ca3af",
+              statusKey:
+                parking.statusKey ||
+                "unknown",
 
 
-            lat:
-              parking.lat,
+              displayStatus:
+                parking.displayStatus
+
+                ||
+
+                parking.statusLabel
+
+                ||
+
+                "狀態未知",
 
 
-            lng:
-              parking.lng
+              markerColor:
+                parking.markerColor ||
+                "#9ca3af",
 
-          }
 
-        })
+              /*
+                導航仍使用政府原始座標
+              */
+
+              lat:
+                parking.lat,
+
+
+              lng:
+                parking.lng,
+
+
+              rotation:
+                aligned.rotation ||
+                0
+
+            }
+
+          };
+
+        }
 
       )
 
@@ -3461,9 +4241,9 @@ function buildFeatureCollection(
 
 
 
-/* =========================================================
+/* =====================================================
    FILTER
-========================================================= */
+===================================================== */
 
 function getActiveFilters() {
 
@@ -3517,9 +4297,9 @@ function getActiveFilters() {
 
 
 
-/* =========================================================
-   COUNTS
-========================================================= */
+/* =====================================================
+   FILTER COUNTS
+===================================================== */
 
 function updateFilterCounts(
   visible
@@ -3574,28 +4354,23 @@ function updateFilterCounts(
 
 
   emptyCount.textContent =
-
     counts.empty;
 
 
-
   occupiedCount.textContent =
-
     counts.occupied;
 
 
-
   unknownCount.textContent =
-
     counts.unknown;
 
 }
 
 
 
-/* =========================================================
+/* =====================================================
    RENDER
-========================================================= */
+===================================================== */
 
 function renderParking() {
 
@@ -3624,6 +4399,22 @@ function renderParking() {
   ) {
 
 
+    map
+      .getSource(
+        "parking-source"
+      )
+      .setData({
+
+        type:
+          "FeatureCollection",
+
+        features:
+          []
+
+      });
+
+
+
     bottomCount.textContent =
 
       "目前沒有停車格資料";
@@ -3636,7 +4427,6 @@ function renderParking() {
 
 
   const zoom =
-
     map.getZoom();
 
 
@@ -3675,7 +4465,6 @@ function renderParking() {
 
 
   const bounds =
-
     map.getBounds();
 
 
@@ -3709,7 +4498,6 @@ function renderParking() {
 
 
   const filters =
-
     getActiveFilters();
 
 
@@ -3770,8 +4558,8 @@ function renderParking() {
 
       "目前畫面內沒有停車格";
 
-
   }
+
 
   else if (
 
@@ -3785,8 +4573,8 @@ function renderParking() {
 
       `目前畫面內有 ${visibleAll.length.toLocaleString()} 個停車格`;
 
-
   }
+
 
   else {
 
@@ -3801,9 +4589,9 @@ function renderParking() {
 
 
 
-/* =========================================================
+/* =====================================================
    NAVIGATION
-========================================================= */
+===================================================== */
 
 function openNavigation(
 
@@ -3816,15 +4604,21 @@ function openNavigation(
 
   const url =
 
-    "https://www.google.com/maps/dir/?api=1" +
+    "https://www.google.com/maps/dir/?api=1"
 
-    "&destination=" +
+    +
+
+    "&destination="
+
+    +
 
     encodeURIComponent(
 
       `${lat},${lng}`
 
-    ) +
+    )
+
+    +
 
     "&travelmode=driving";
 
@@ -3844,9 +4638,9 @@ function openNavigation(
 
 
 
-/* =========================================================
+/* =====================================================
    POPUP
-========================================================= */
+===================================================== */
 
 function showParkingPopup(
   feature
@@ -3864,14 +4658,12 @@ function showParkingPopup(
 
 
   const lat =
-
     Number(
       p.lat
     );
 
 
   const lng =
-
     Number(
       p.lng
     );
@@ -3881,67 +4673,87 @@ function showParkingPopup(
   const popupHTML = `
 
 
-  <div class="parking-popup">
+    <div class="parking-popup">
 
 
-    <div class="parking-title">
+      <div class="parking-title">
 
-      路邊停車格
+        路邊停車格
 
-    </div>
-
-
-
-    <div class="parking-status-line">
+      </div>
 
 
-      <span
 
-        class="popup-space"
+      <div class="parking-status-line">
 
-        style="
-          background:
+
+        <span
+
+          class="popup-space"
+
+          style="
+            background:
+            ${escapeHTML(
+              p.markerColor ||
+              "#9ca3af"
+            )}
+          "
+
+        ></span>
+
+
+        <strong>
+
           ${escapeHTML(
-            p.markerColor ||
-            "#9ca3af"
+
+            p.displayStatus
+
+            ||
+
+            "狀態未知"
+
           )}
-        "
 
-      ></span>
+        </strong>
 
 
-      <strong>
+      </div>
+
+
+
+      <div class="row">
+
+        車格編號：
+
+        <strong>
+
+          ${escapeHTML(
+
+            p.cellId
+
+            ||
+
+            p.id
+
+            ||
+
+            "未提供"
+
+          )}
+
+        </strong>
+
+      </div>
+
+
+
+      <div class="row">
+
+        路段：
 
         ${escapeHTML(
 
-          p.displayStatus
-
-          ||
-
-          "狀態未知"
-
-        )}
-
-      </strong>
-
-
-    </div>
-
-
-
-    <div class="row">
-
-      車格編號：
-
-      <strong>
-
-        ${escapeHTML(
-
-          p.cellId
-
-          ||
-
-          p.id
+          p.roadName
 
           ||
 
@@ -3949,116 +4761,96 @@ function showParkingPopup(
 
         )}
 
-      </strong>
+      </div>
+
+
+
+      <div class="row">
+
+        類型：
+
+        ${escapeHTML(
+
+          p.name
+
+          ||
+
+          "未提供"
+
+        )}
+
+      </div>
+
+
+
+      <div class="row">
+
+        收費方式：
+
+        ${escapeHTML(
+
+          p.pay
+
+          ||
+
+          "未提供"
+
+        )}
+
+      </div>
+
+
+
+      <div class="row">
+
+        收費：
+
+        ${escapeHTML(
+
+          p.payCash
+
+          ||
+
+          "未提供"
+
+        )}
+
+      </div>
+
+
+
+      <div class="row">
+
+        收費時間：
+
+        ${escapeHTML(
+
+          p.hour
+
+          ||
+
+          "未提供"
+
+        )}
+
+      </div>
+
+
+
+      <button
+
+        class="navigation-button"
+
+        onclick="openNavigation(${lat}, ${lng})"
+
+      >
+
+        導航至此車格
+
+      </button>
+
 
     </div>
-
-
-
-    <div class="row">
-
-      路段：
-
-      ${escapeHTML(
-
-        p.roadName
-
-        ||
-
-        "未提供"
-
-      )}
-
-    </div>
-
-
-
-    <div class="row">
-
-      類型：
-
-      ${escapeHTML(
-
-        p.name
-
-        ||
-
-        "未提供"
-
-      )}
-
-    </div>
-
-
-
-    <div class="row">
-
-      收費方式：
-
-      ${escapeHTML(
-
-        p.pay
-
-        ||
-
-        "未提供"
-
-      )}
-
-    </div>
-
-
-
-    <div class="row">
-
-      收費：
-
-      ${escapeHTML(
-
-        p.payCash
-
-        ||
-
-        "未提供"
-
-      )}
-
-    </div>
-
-
-
-    <div class="row">
-
-      收費時間：
-
-      ${escapeHTML(
-
-        p.hour
-
-        ||
-
-        "未提供"
-
-      )}
-
-    </div>
-
-
-
-    <button
-
-      class="navigation-button"
-
-      onclick="openNavigation(${lat}, ${lng})"
-
-    >
-
-      導航至此停車格
-
-    </button>
-
-
-  </div>
 
   `;
 
@@ -4075,8 +4867,7 @@ function showParkingPopup(
 
 
     /*
-      點擊地圖其他地方
-      Popup 自動關閉
+      點其他地圖位置即可關閉
     */
 
     closeOnClick:
@@ -4108,9 +4899,9 @@ function showParkingPopup(
 
 
 
-/* =========================================================
-   GPS
-========================================================= */
+/* =====================================================
+   USER LOCATION
+===================================================== */
 
 function setUserLocation(
 
@@ -4141,7 +4932,6 @@ function setUserLocation(
 
 
   element.className =
-
     "user-dot";
 
 
@@ -4151,12 +4941,9 @@ function setUserLocation(
     new maplibregl.Marker({
 
       element:
-
         element,
 
-
       anchor:
-
         "center"
 
     })
@@ -4201,6 +4988,10 @@ function setUserLocation(
 
 
 
+/* =====================================================
+   INITIAL LOCATION
+===================================================== */
+
 function locateUser() {
 
 
@@ -4209,14 +5000,31 @@ function locateUser() {
   ) {
 
 
+    map.jumpTo({
+
+      center:
+        DEFAULT_CENTER,
+
+      zoom:
+        16,
+
+      pitch:
+        0,
+
+      bearing:
+        0
+
+    });
+
+
     return;
 
   }
 
 
 
-  navigator.geolocation
-
+  navigator
+    .geolocation
     .getCurrentPosition(
 
 
@@ -4224,18 +5032,11 @@ function locateUser() {
 
 
         const lat =
-
-          position
-            .coords
-            .latitude;
-
+          position.coords.latitude;
 
 
         const lng =
-
-          position
-            .coords
-            .longitude;
+          position.coords.longitude;
 
 
 
@@ -4283,7 +5084,6 @@ function locateUser() {
         map.jumpTo({
 
           center:
-
             DEFAULT_CENTER,
 
           zoom:
@@ -4296,6 +5096,9 @@ function locateUser() {
             0
 
         });
+
+
+        renderParking();
 
       },
 
@@ -4319,14 +5122,145 @@ function locateUser() {
 
 
 
-/* =========================================================
-   EVENTS
-========================================================= */
+/* =====================================================
+   LOCATION BUTTON
+===================================================== */
+
+function moveToUserLocation() {
+
+
+  if (
+    !navigator.geolocation
+  ) {
+
+
+    alert(
+      "此裝置不支援定位功能"
+    );
+
+
+    return;
+
+  }
+
+
+
+  locateButton.disabled =
+    true;
+
+
+
+  navigator
+    .geolocation
+    .getCurrentPosition(
+
+
+      position => {
+
+
+        const lat =
+          position.coords.latitude;
+
+
+        const lng =
+          position.coords.longitude;
+
+
+
+        setUserLocation(
+
+          lng,
+
+          lat
+
+        );
+
+
+
+        map.easeTo({
+
+          center: [
+
+            lng,
+
+            lat
+
+          ],
+
+          zoom:
+            Math.max(
+              map.getZoom(),
+              16
+            ),
+
+          bearing:
+            0,
+
+          pitch:
+            0,
+
+          duration:
+            800
+
+        });
+
+
+
+        locateButton.disabled =
+          false;
+
+      },
+
+
+      error => {
+
+
+        console.error(
+          error
+        );
+
+
+        alert(
+          "目前無法取得你的位置，請確認瀏覽器定位權限。"
+        );
+
+
+        locateButton.disabled =
+          false;
+
+      },
+
+
+      {
+
+        enableHighAccuracy:
+          true,
+
+        timeout:
+          10000,
+
+        maximumAge:
+          0
+
+      }
+
+    );
+
+}
+
+
+
+/* =====================================================
+   FILTER EVENTS
+===================================================== */
 
 [
   filterEmpty,
+
   filterOccupied,
+
   filterUnknown
+
 ]
 
 .forEach(
@@ -4402,10 +5336,9 @@ clearAllButton.addEventListener(
 
 
 
-/*
-  重新整理 =
-  真的重新打 Live API
-*/
+/* =====================================================
+   LIVE REFRESH BUTTON
+===================================================== */
 
 reloadButton.addEventListener(
 
@@ -4417,9 +5350,23 @@ reloadButton.addEventListener(
 
 
 
-/* =========================================================
+/* =====================================================
+   LOCATE BUTTON EVENT
+===================================================== */
+
+locateButton.addEventListener(
+
+  "click",
+
+  moveToUserLocation
+
+);
+
+
+
+/* =====================================================
    MAP LOAD
-========================================================= */
+===================================================== */
 
 map.on(
 
@@ -4439,6 +5386,10 @@ map.on(
 
 
 
+    /*
+      點擊車格
+    */
+
     map.on(
 
       "click",
@@ -4457,6 +5408,7 @@ map.on(
           event.features[0];
 
 
+
         if (
           feature
         ) {
@@ -4473,6 +5425,10 @@ map.on(
     );
 
 
+
+    /*
+      電腦滑鼠提示
+    */
 
     map.on(
 
@@ -4516,16 +5472,16 @@ map.on(
 
 
 
+    /*
+      初次定位
+    */
+
     locateUser();
 
 
 
     /*
-      第一次進網站：
-      先讀 GitHub parking.json
-
-      使用者按重新整理：
-      才即時打政府 API
+      初次開啟先使用 GitHub parking.json
     */
 
     try {
@@ -4547,8 +5503,8 @@ map.on(
 
 
       /*
-        靜態資料失敗時
-        再嘗試 Live API
+        GitHub 備援失敗時，
+        改打 Vercel Live API
       */
 
       await refreshLiveParking();
@@ -4560,6 +5516,10 @@ map.on(
 );
 
 
+
+/* =====================================================
+   MAP MOVE
+===================================================== */
 
 map.on(
 
@@ -4576,6 +5536,31 @@ map.on(
   "zoomend",
 
   renderParking
+
+);
+
+
+
+/* =====================================================
+   MAP ERROR
+===================================================== */
+
+map.on(
+
+  "error",
+
+  event => {
+
+
+    console.warn(
+
+      "地圖載入錯誤：",
+
+      event
+
+    );
+
+  }
 
 );
 
