@@ -639,7 +639,7 @@ input {
         </div>
 
         <div class="menu-version">
-          智慧停車 APP v1.0.5
+          智慧停車 APP v1.0.6
         </div>
       </div>
 
@@ -776,7 +776,7 @@ input {
           id="bottomStatus"
           class="bottom-status"
         >
-          APP v1.0.5
+          APP v1.0.6
         </div>
 
       </div>
@@ -800,7 +800,7 @@ input {
    Config
 ===================================================== */
 
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.0.6";
 
 const LIVE_API_URL =
   "https://smart-parking-app-api.vercel.app/api/parking";
@@ -1642,12 +1642,16 @@ async function refreshLiveParking() {
       `即時更新完成 · ${now.toLocaleTimeString("zh-TW")}`;
 
     renderParking();
+
+    return true;
   }
   catch (error) {
     console.error(error);
 
     bottomStatus.textContent =
       "即時更新失敗，保留目前資料";
+
+    return false;
   }
   finally {
     reloadButton.disabled =
@@ -2163,14 +2167,10 @@ function buildIndividualFeatureCollection(
       list.map(
         parking => {
           /*
-            位置使用政府原始座標。
-            只調整方向，不再位移到道路中心或路肩。
+            v1.0.6：
+            完全使用政府 API 原始座標。
+            不做道路吸附、不移動位置、不依道路旋轉。
           */
-          const rotation =
-            getRoadRotation(
-              parking
-            );
-
           return {
             type: "Feature",
 
@@ -2232,7 +2232,8 @@ function buildIndividualFeatureCollection(
               lng:
                 parking.lng,
 
-              rotation
+              rotation:
+                0
             }
           };
         }
@@ -2429,21 +2430,11 @@ function renderGroupedParking(
         group.items.length;
 
       /*
-        用其中一個車格判斷道路方向。
-        不改位置，只旋轉色帶。
+        v1.0.6：
+        群組色帶也不再依道路旋轉。
       */
-      const representative =
-        group.items[
-          Math.floor(
-            group.items.length /
-            2
-          )
-        ];
-
       const rotation =
-        getRoadRotation(
-          representative
-        );
+        0;
 
       const element =
         document.createElement(
@@ -3285,13 +3276,31 @@ map.on(
 
     locateUser();
 
-    try {
-      await loadStaticParking();
-    }
-    catch (error) {
-      console.error(error);
+    /*
+      v1.0.6：
+      第一次開啟頁面就直接打 Vercel Live API，
+      讓紅 / 綠 / 灰狀態一進頁面就使用最新資料。
 
+      只有 Live API 失敗時，才讀 GitHub parking.json 當備援。
+    */
+    const liveLoaded =
       await refreshLiveParking();
+
+    if (
+      !liveLoaded
+    ) {
+      try {
+        await loadStaticParking();
+
+        bottomStatus.textContent =
+          "即時 API 連線失敗，目前顯示 GitHub 備援資料";
+      }
+      catch (error) {
+        console.error(error);
+
+        bottomStatus.textContent =
+          "目前無法取得停車格資料";
+      }
     }
   }
 );
