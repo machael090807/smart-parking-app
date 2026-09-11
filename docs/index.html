@@ -1,0 +1,3321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+<title>智慧路邊停車媒合 APP</title>
+
+<!-- App / browser icons -->
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=105">
+<link rel="shortcut icon" type="image/png" href="./favicon-32.png?v=105">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=105">
+<link rel="manifest" href="./manifest.webmanifest?v=105">
+
+<meta name="theme-color" content="#1677ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="智慧停車">
+
+<link
+  href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+  rel="stylesheet"
+>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans TC",
+    sans-serif;
+  background: #f5f5f5;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+#app,
+#map {
+  width: 100%;
+  height: 100%;
+}
+
+#app {
+  position: relative;
+  overflow: hidden;
+}
+
+/* =====================================================
+   Top controls
+===================================================== */
+
+.menu-button,
+.locate-button {
+  position: absolute;
+  right: 18px;
+  z-index: 30;
+
+  width: 48px;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 0;
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.14);
+
+  cursor: pointer;
+}
+
+.menu-button {
+  top: 18px;
+}
+
+.locate-button {
+  top: 76px;
+  color: #1677ff;
+}
+
+.locate-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.menu-lines {
+  width: 21px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.menu-lines span {
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: #202124;
+}
+
+.locate-button svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* =====================================================
+   Menu
+===================================================== */
+
+.menu-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 39;
+  background: rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.menu-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-menu {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+
+  width: min(360px, 88vw);
+  padding: 22px;
+  overflow-y: auto;
+
+  background: #ffffff;
+
+  box-shadow:
+    -8px 0 32px rgba(0, 0, 0, 0.15);
+
+  transform: translateX(105%);
+  transition: transform 0.25s ease;
+}
+
+.side-menu.open {
+  transform: translateX(0);
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 26px;
+}
+
+.menu-title {
+  color: #1f2937;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.menu-version {
+  margin-top: 3px;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.menu-close {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #444;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.menu-section-title {
+  margin-top: 22px;
+  margin-bottom: 10px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.menu-section-title:first-of-type {
+  margin-top: 0;
+}
+
+/* =====================================================
+   Filters
+===================================================== */
+
+.filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-item {
+  min-height: 52px;
+  padding: 9px 11px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border: 1px solid #eceff3;
+  border-radius: 13px;
+
+  cursor: pointer;
+}
+
+.filter-item:hover {
+  background: #f8f9fa;
+}
+
+.filter-item input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.filter-space {
+  width: 26px;
+  height: 11px;
+  flex: 0 0 26px;
+  border: 2px solid #ffffff;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.13);
+}
+
+.filter-space.green { background: #22c55e; }
+.filter-space.red { background: #ef4444; }
+.filter-space.gray { background: #9ca3af; }
+
+.type-box {
+  width: 26px;
+  height: 12px;
+  flex: 0 0 26px;
+
+  border: 3px solid #ffffff;
+  border-radius: 3px;
+
+  background: #e5e7eb;
+}
+
+.type-box.normal {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.14);
+}
+
+.type-box.disabled {
+  border-color: #2563eb;
+}
+
+.type-box.loading {
+  border-color: #f59e0b;
+}
+
+.type-box.family {
+  border-color: #d946ef;
+}
+
+.filter-name {
+  flex: 1;
+  color: #333;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.filter-count {
+  min-width: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #f1f3f5;
+  color: #777;
+  font-size: 11px;
+  text-align: center;
+}
+
+.menu-actions {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.menu-action {
+  height: 42px;
+  border: 0;
+  border-radius: 11px;
+  background: #f3f4f6;
+  color: #333;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.menu-attribution {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.menu-attribution a {
+  color: #1677ff;
+  text-decoration: none;
+}
+
+/* =====================================================
+   Bottom panel
+===================================================== */
+
+.bottom-card {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 25;
+
+  width: min(calc(100% - 36px), 720px);
+  padding: 12px;
+
+  border-radius: 18px;
+
+  background: rgba(255,255,255,.97);
+
+  box-shadow:
+    0 8px 32px rgba(0,0,0,.16);
+
+  backdrop-filter: blur(8px);
+
+  transform: translateX(-50%);
+}
+
+.bottom-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bottom-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.bottom-count {
+  overflow: hidden;
+  color: #222;
+  font-size: 15px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bottom-status {
+  margin-top: 3px;
+  overflow: hidden;
+  color: #8a8f98;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.refresh-button {
+  min-width: 92px;
+  height: 44px;
+  padding: 0 15px;
+  flex: 0 0 auto;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: #1677ff;
+  color: #fff;
+
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refresh-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* =====================================================
+   Map / user / low-zoom grouped bars
+===================================================== */
+
+.user-dot {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #1677ff;
+  box-shadow:
+    0 0 0 4px rgba(22,119,255,.25);
+}
+
+.group-parking-bar {
+  width: 42px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 3px;
+
+  box-shadow:
+    0 1px 3px rgba(0,0,0,.20);
+
+  cursor: pointer;
+}
+
+.group-parking-bar:hover {
+  transform: scale(1.08);
+}
+
+/* =====================================================
+   Popup
+===================================================== */
+
+.parking-popup {
+  min-width: 225px;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.parking-title {
+  margin-bottom: 7px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.parking-status-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.popup-space {
+  width: 25px;
+  height: 11px;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15);
+}
+
+.popup-special {
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.row {
+  margin: 3px 0;
+}
+
+.navigation-button {
+  width: 100%;
+  min-height: 42px;
+  margin: 13px auto 0;
+  padding: 10px 14px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: #1677ff;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.navigation-button:hover {
+  background: #0868e8;
+}
+
+.maplibregl-popup-content {
+  padding: 14px;
+  border-radius: 14px;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,.16);
+}
+
+.maplibregl-popup-close-button {
+  display: none !important;
+}
+
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-top-right {
+  display: none !important;
+}
+
+/* =====================================================
+   Responsive
+===================================================== */
+
+@media (max-width: 600px) {
+  .menu-button {
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .locate-button {
+    top: 64px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .side-menu {
+    width: min(330px, 90vw);
+    padding: 19px;
+  }
+
+  .bottom-card {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: calc(100% - 20px);
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .bottom-main {
+    gap: 8px;
+  }
+
+  .bottom-count {
+    font-size: 13px;
+  }
+
+  .bottom-status {
+    font-size: 10px;
+  }
+
+  .refresh-button {
+    min-width: 76px;
+    height: 42px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <div id="map"></div>
+
+  <button
+    id="menuButton"
+    class="menu-button"
+    type="button"
+    aria-label="開啟篩選選單"
+  >
+    <div class="menu-lines">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </button>
+
+  <button
+    id="locateButton"
+    class="locate-button"
+    type="button"
+    aria-label="回到我的位置"
+    title="回到我的位置"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="4"></circle>
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 2v3"></path>
+      <path d="M12 19v3"></path>
+      <path d="M2 12h3"></path>
+      <path d="M19 12h3"></path>
+    </svg>
+  </button>
+
+  <div
+    id="menuBackdrop"
+    class="menu-backdrop"
+  ></div>
+
+  <aside
+    id="sideMenu"
+    class="side-menu"
+  >
+
+    <div class="menu-header">
+
+      <div>
+        <div class="menu-title">
+          停車格篩選
+        </div>
+
+        <div class="menu-version">
+          智慧停車 APP v1.0.5
+        </div>
+      </div>
+
+      <button
+        id="menuClose"
+        class="menu-close"
+        type="button"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="menu-section-title">
+      停車狀態
+    </div>
+
+    <div class="filter-list">
+
+      <label class="filter-item">
+        <input id="filterEmpty" type="checkbox" checked>
+        <span class="filter-space green"></span>
+        <span class="filter-name">空白停車格</span>
+        <span id="emptyCount" class="filter-count">0</span>
+      </label>
+
+      <label class="filter-item">
+        <input id="filterOccupied" type="checkbox" checked>
+        <span class="filter-space red"></span>
+        <span class="filter-name">已有停車</span>
+        <span id="occupiedCount" class="filter-count">0</span>
+      </label>
+
+      <label class="filter-item">
+        <input id="filterUnknown" type="checkbox" checked>
+        <span class="filter-space gray"></span>
+        <span class="filter-name">狀態未知</span>
+        <span id="unknownCount" class="filter-count">0</span>
+      </label>
+
+    </div>
+
+    <div class="menu-section-title">
+      車格類型
+    </div>
+
+    <div class="filter-list">
+
+      <label class="filter-item">
+        <input id="filterNormal" type="checkbox" checked>
+        <span class="type-box normal"></span>
+        <span class="filter-name">一般車格</span>
+        <span id="normalCount" class="filter-count">0</span>
+      </label>
+
+      <label class="filter-item">
+        <input id="filterDisabled" type="checkbox" checked>
+        <span class="type-box disabled"></span>
+        <span class="filter-name">身障車位</span>
+        <span id="disabledCount" class="filter-count">0</span>
+      </label>
+
+      <label class="filter-item">
+        <input id="filterLoading" type="checkbox" checked>
+        <span class="type-box loading"></span>
+        <span class="filter-name">貨車／裝卸車位</span>
+        <span id="loadingCount" class="filter-count">0</span>
+      </label>
+
+      <label class="filter-item">
+        <input id="filterFamily" type="checkbox" checked>
+        <span class="type-box family"></span>
+        <span class="filter-name">婦幼／親子車位</span>
+        <span id="familyCount" class="filter-count">0</span>
+      </label>
+
+    </div>
+
+    <div class="menu-actions">
+      <button id="selectAllButton" class="menu-action" type="button">
+        全部顯示
+      </button>
+
+      <button id="clearAllButton" class="menu-action" type="button">
+        全部隱藏
+      </button>
+    </div>
+
+    <div class="menu-section-title">
+      圖示說明
+    </div>
+
+    <div class="menu-attribution">
+      車格內部顏色代表「目前停車狀態」。<br>
+      外框顏色代表「特殊車格類型」。<br>
+      藍框＝身障、橘框＝貨車／裝卸、紫框＝婦幼／親子。
+    </div>
+
+    <div class="menu-section-title">
+      地圖資料來源
+    </div>
+
+    <div class="menu-attribution">
+      Map data：
+      <a href="https://openfreemap.org/" target="_blank" rel="noopener noreferrer">
+        OpenFreeMap
+      </a>
+      ·
+      <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener noreferrer">
+        © OpenMapTiles
+      </a>
+      ·
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+        OpenStreetMap
+      </a>
+    </div>
+
+  </aside>
+
+  <div class="bottom-card">
+
+    <div class="bottom-main">
+
+      <div class="bottom-info">
+
+        <div
+          id="bottomCount"
+          class="bottom-count"
+        >
+          正在準備停車格資料…
+        </div>
+
+        <div
+          id="bottomStatus"
+          class="bottom-status"
+        >
+          APP v1.0.5
+        </div>
+
+      </div>
+
+      <button
+        id="reloadButton"
+        class="refresh-button"
+        type="button"
+      >
+        重新整理
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+/* =====================================================
+   Config
+===================================================== */
+
+const APP_VERSION = "1.0.5";
+
+const LIVE_API_URL =
+  "https://smart-parking-app-api.vercel.app/api/parking";
+
+const DEFAULT_CENTER = [
+  121.4618,
+  25.0114
+];
+
+const MIN_ZOOM = 15;
+
+/*
+  17 以下：自動把附近車格合併成一條狀態色帶
+  17 以上：顯示每一個獨立停車格
+*/
+const INDIVIDUAL_ZOOM = 17;
+
+const MAX_VISIBLE_MARKERS = 1600;
+
+const MAP_STYLE_URL =
+  "https://tiles.openfreemap.org/styles/liberty";
+
+/* =====================================================
+   DOM
+===================================================== */
+
+const menuButton =
+  document.getElementById("menuButton");
+
+const menuClose =
+  document.getElementById("menuClose");
+
+const menuBackdrop =
+  document.getElementById("menuBackdrop");
+
+const sideMenu =
+  document.getElementById("sideMenu");
+
+const locateButton =
+  document.getElementById("locateButton");
+
+const reloadButton =
+  document.getElementById("reloadButton");
+
+const bottomCount =
+  document.getElementById("bottomCount");
+
+const bottomStatus =
+  document.getElementById("bottomStatus");
+
+const filterEmpty =
+  document.getElementById("filterEmpty");
+
+const filterOccupied =
+  document.getElementById("filterOccupied");
+
+const filterUnknown =
+  document.getElementById("filterUnknown");
+
+const filterNormal =
+  document.getElementById("filterNormal");
+
+const filterDisabled =
+  document.getElementById("filterDisabled");
+
+const filterLoading =
+  document.getElementById("filterLoading");
+
+const filterFamily =
+  document.getElementById("filterFamily");
+
+const emptyCount =
+  document.getElementById("emptyCount");
+
+const occupiedCount =
+  document.getElementById("occupiedCount");
+
+const unknownCount =
+  document.getElementById("unknownCount");
+
+const normalCount =
+  document.getElementById("normalCount");
+
+const disabledCount =
+  document.getElementById("disabledCount");
+
+const loadingCount =
+  document.getElementById("loadingCount");
+
+const familyCount =
+  document.getElementById("familyCount");
+
+const selectAllButton =
+  document.getElementById("selectAllButton");
+
+const clearAllButton =
+  document.getElementById("clearAllButton");
+
+/* =====================================================
+   State
+===================================================== */
+
+let parkingData = [];
+
+let userMarker = null;
+
+let mapReady = false;
+
+let styleSimplified = false;
+
+/*
+  低縮放等級使用 DOM Marker，
+  避免一大堆小車格互相重疊。
+*/
+let groupMarkers = [];
+
+/* =====================================================
+   Map
+===================================================== */
+
+const map =
+  new maplibregl.Map({
+    container: "map",
+
+    style: MAP_STYLE_URL,
+
+    center: DEFAULT_CENTER,
+
+    zoom: 16,
+
+    pitch: 0,
+
+    bearing: 0,
+
+    minZoom: 11,
+
+    maxZoom: 19,
+
+    attributionControl: false,
+
+    dragRotate: false,
+
+    pitchWithRotate: false,
+
+    touchPitch: false
+  });
+
+/* =====================================================
+   Menu
+===================================================== */
+
+function openMenu() {
+  sideMenu.classList.add("open");
+  menuBackdrop.classList.add("open");
+}
+
+function closeMenu() {
+  sideMenu.classList.remove("open");
+  menuBackdrop.classList.remove("open");
+}
+
+menuButton.addEventListener(
+  "click",
+  openMenu
+);
+
+menuClose.addEventListener(
+  "click",
+  closeMenu
+);
+
+menuBackdrop.addEventListener(
+  "click",
+  closeMenu
+);
+
+document.addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  }
+);
+
+/* =====================================================
+   Common
+===================================================== */
+
+function getValue(
+  object,
+  ...keys
+) {
+  for (const key of keys) {
+    const value =
+      object[key];
+
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function escapeHTML(
+  value
+) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function normalizeRoadName(
+  value
+) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/臺/g, "台");
+}
+
+/* =====================================================
+   Clean map
+===================================================== */
+
+function simplifyMapStyle() {
+  if (styleSimplified) {
+    return;
+  }
+
+  const style =
+    map.getStyle();
+
+  if (
+    !style ||
+    !style.layers
+  ) {
+    return;
+  }
+
+  for (
+    const layer
+    of style.layers
+  ) {
+    const id =
+      String(
+        layer.id || ""
+      )
+      .toLowerCase();
+
+    const sourceLayer =
+      String(
+        layer["source-layer"] || ""
+      )
+      .toLowerCase();
+
+    const type =
+      String(
+        layer.type || ""
+      )
+      .toLowerCase();
+
+    const keyword =
+      `${id} ${sourceLayer}`;
+
+    if (
+      type ===
+      "fill-extrusion"
+    ) {
+      map.setLayoutProperty(
+        layer.id,
+        "visibility",
+        "none"
+      );
+
+      continue;
+    }
+
+    const isBackground =
+      type === "background";
+
+    const isWater =
+      /water|ocean|river|lake|stream|canal/
+        .test(keyword);
+
+    const isLand =
+      /landuse|landcover|park|grass|wood|forest|residential/
+        .test(keyword)
+      &&
+      type !== "symbol";
+
+    const isBuilding =
+      /building/
+        .test(keyword)
+      &&
+      type === "fill";
+
+    const isRoadGeometry =
+      /road|street|highway|transport|bridge|tunnel|motorway|trunk|primary|secondary|tertiary|path/
+        .test(keyword)
+      &&
+      (
+        type === "line" ||
+        type === "fill"
+      );
+
+    const isRoadLabel =
+      /road|street|highway|transport|bridge|tunnel|motorway|trunk|primary|secondary|tertiary/
+        .test(keyword)
+      &&
+      type === "symbol";
+
+    const isShopLabel =
+      /poi|shop|store|amenity|commercial|retail|restaurant|cafe|food|bank|hospital|pharmacy|hotel/
+        .test(keyword)
+      &&
+      type === "symbol";
+
+    const keep =
+      isBackground ||
+      isWater ||
+      isLand ||
+      isBuilding ||
+      isRoadGeometry ||
+      isRoadLabel ||
+      isShopLabel;
+
+    map.setLayoutProperty(
+      layer.id,
+      "visibility",
+      keep
+        ? "visible"
+        : "none"
+    );
+  }
+
+  styleSimplified =
+    true;
+}
+
+/* =====================================================
+   Parking status
+===================================================== */
+
+function analyzeSingleStatus(
+  value
+) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return null;
+  }
+
+  const normalized =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (
+    [
+      "0",
+      "n",
+      "no",
+      "false"
+    ].includes(normalized)
+  ) {
+    return {
+      key: "empty",
+      label: "空白停車格",
+      color: "#22c55e"
+    };
+  }
+
+  if (
+    [
+      "1",
+      "y",
+      "yes",
+      "true"
+    ].includes(normalized)
+  ) {
+    return {
+      key: "occupied",
+      label: "已有停車",
+      color: "#ef4444"
+    };
+  }
+
+  const emptyKeywords = [
+    "空位",
+    "空車位",
+    "無車",
+    "可停",
+    "空車",
+    "available",
+    "empty",
+    "vacant",
+    "free"
+  ];
+
+  const occupiedKeywords = [
+    "有車",
+    "已停",
+    "占用",
+    "佔用",
+    "occupied",
+    "full",
+    "busy"
+  ];
+
+  if (
+    emptyKeywords.some(
+      keyword =>
+        normalized.includes(keyword)
+    )
+  ) {
+    return {
+      key: "empty",
+      label: "空白停車格",
+      color: "#22c55e"
+    };
+  }
+
+  if (
+    occupiedKeywords.some(
+      keyword =>
+        normalized.includes(keyword)
+    )
+  ) {
+    return {
+      key: "occupied",
+      label: "已有停車",
+      color: "#ef4444"
+    };
+  }
+
+  return null;
+}
+
+function getAvailability(
+  parking
+) {
+  const candidates = [
+    parking.parkingStatus,
+    parking.cellStatus
+  ];
+
+  for (
+    const candidate
+    of candidates
+  ) {
+    const result =
+      analyzeSingleStatus(
+        candidate
+      );
+
+    if (result) {
+      return result;
+    }
+  }
+
+  return {
+    key: "unknown",
+    label: "狀態未知",
+    color: "#9ca3af"
+  };
+}
+
+/* =====================================================
+   Special parking type
+===================================================== */
+
+/*
+  即時停車資料本身提供 name(類型) 與 memo(備註)。
+  先用關鍵字辨識特殊車格。
+
+  後續若政府資料出現其他明確類型，
+  只需擴充這裡即可。
+*/
+function classifySpecialType(
+  parking
+) {
+  const text =
+    `${parking.name || ""} ${parking.memo || ""}`
+      .toLowerCase();
+
+  if (
+    /身心障礙|身障|無障礙|殘障/
+      .test(text)
+  ) {
+    return {
+      key: "disabled",
+      label: "身障車位",
+      borderColor: "#2563eb"
+    };
+  }
+
+  if (
+    /貨車|卸貨|裝卸|貨運|物流/
+      .test(text)
+  ) {
+    return {
+      key: "loading",
+      label: "貨車／裝卸車位",
+      borderColor: "#f59e0b"
+    };
+  }
+
+  if (
+    /婦幼|親子|孕婦|育兒/
+      .test(text)
+  ) {
+    return {
+      key: "family",
+      label: "婦幼／親子車位",
+      borderColor: "#d946ef"
+    };
+  }
+
+  return {
+    key: "normal",
+    label: "一般車格",
+    borderColor: "#ffffff"
+  };
+}
+
+/* =====================================================
+   Normalize parking
+===================================================== */
+
+function normalizeParking(
+  raw
+) {
+  const lat =
+    Number(
+      getValue(
+        raw,
+        "latitude",
+        "Latitude",
+        "LATITUDE",
+        "lat",
+        "LAT",
+        "定位坐標[緯度]",
+        "定位坐標 [緯度]",
+        "緯度"
+      )
+    );
+
+  const lng =
+    Number(
+      getValue(
+        raw,
+        "longitude",
+        "Longitude",
+        "LONGITUDE",
+        "lng",
+        "lon",
+        "LNG",
+        "LON",
+        "定位坐標[經度]",
+        "定位坐標 [經度]",
+        "經度"
+      )
+    );
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat === 0 ||
+    lng === 0 ||
+    lat < 24 ||
+    lat > 26 ||
+    lng < 120 ||
+    lng > 123
+  ) {
+    return null;
+  }
+
+  const parking = {
+    id:
+      String(
+        getValue(
+          raw,
+          "id",
+          "ID",
+          "系統編號"
+        )
+      ),
+
+    cellId:
+      String(
+        getValue(
+          raw,
+          "cellid",
+          "CELLID",
+          "CellID",
+          "車格編號"
+        )
+      ),
+
+    name:
+      String(
+        getValue(
+          raw,
+          "name",
+          "NAME",
+          "類型"
+        )
+      ),
+
+    roadName:
+      String(
+        getValue(
+          raw,
+          "roadname",
+          "ROADNAME",
+          "RoadName",
+          "路段名稱"
+        )
+      ),
+
+    hour:
+      String(
+        getValue(
+          raw,
+          "hour",
+          "HOUR",
+          "開放停車時間說明"
+        )
+      ),
+
+    pay:
+      String(
+        getValue(
+          raw,
+          "pay",
+          "PAY",
+          "收費方式"
+        )
+      ),
+
+    payCash:
+      String(
+        getValue(
+          raw,
+          "paycash",
+          "PAYCASH",
+          "收費計價"
+        )
+      ),
+
+    memo:
+      String(
+        getValue(
+          raw,
+          "memo",
+          "MEMO",
+          "備註"
+        )
+      ),
+
+    cellStatus:
+      String(
+        getValue(
+          raw,
+          "cellstatus",
+          "CELLSTATUS",
+          "CellStatus",
+          "車格狀態"
+        )
+      ),
+
+    parkingStatus:
+      String(
+        getValue(
+          raw,
+          "parkingstatus",
+          "PARKINGSTATUS",
+          "ParkingStatus",
+          "停車狀態"
+        )
+      ),
+
+    lat,
+    lng
+  };
+
+  const availability =
+    getAvailability(
+      parking
+    );
+
+  parking.markerColor =
+    availability.color;
+
+  parking.statusKey =
+    availability.key;
+
+  parking.displayStatus =
+    availability.label;
+
+  const special =
+    classifySpecialType(
+      parking
+    );
+
+  parking.specialKey =
+    special.key;
+
+  parking.specialLabel =
+    special.label;
+
+  parking.borderColor =
+    special.borderColor;
+
+  return parking;
+}
+
+/* =====================================================
+   CSV
+===================================================== */
+
+function parseLiveCSV(
+  csvText
+) {
+  const result =
+    Papa.parse(
+      csvText,
+      {
+        header: true,
+        skipEmptyLines: true
+      }
+    );
+
+  return result.data
+    .map(normalizeParking)
+    .filter(Boolean);
+}
+
+/* =====================================================
+   Static / live data
+===================================================== */
+
+async function loadStaticParking() {
+  const response =
+    await fetch(
+      `./parking.json?t=${Date.now()}`,
+      {
+        cache: "no-store"
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `parking.json HTTP ${response.status}`
+    );
+  }
+
+  const result =
+    await response.json();
+
+  parkingData =
+    (
+      Array.isArray(result.data)
+        ? result.data
+        : []
+    )
+    .map(normalizeParking)
+    .filter(Boolean);
+
+  bottomStatus.textContent =
+    `已載入 ${parkingData.length.toLocaleString()} 個停車格 · GitHub 備援資料`;
+
+  renderParking();
+}
+
+async function refreshLiveParking() {
+  reloadButton.disabled =
+    true;
+
+  reloadButton.textContent =
+    "更新中…";
+
+  bottomStatus.textContent =
+    "正在向政府 API 取得最新資料…";
+
+  try {
+    const response =
+      await fetch(
+        LIVE_API_URL +
+        "?t=" +
+        Date.now(),
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        `Live API HTTP ${response.status}`
+      );
+    }
+
+    const csvText =
+      await response.text();
+
+    const latestData =
+      parseLiveCSV(
+        csvText
+      );
+
+    if (!latestData.length) {
+      throw new Error(
+        "即時 API 沒有可用停車資料"
+      );
+    }
+
+    parkingData =
+      latestData;
+
+    const now =
+      new Date();
+
+    bottomStatus.textContent =
+      `即時更新完成 · ${now.toLocaleTimeString("zh-TW")}`;
+
+    renderParking();
+  }
+  catch (error) {
+    console.error(error);
+
+    bottomStatus.textContent =
+      "即時更新失敗，保留目前資料";
+  }
+  finally {
+    reloadButton.disabled =
+      false;
+
+    reloadButton.textContent =
+      "重新整理";
+  }
+}
+
+/* =====================================================
+   Road direction
+
+   v1.0.5:
+   不再把政府車格座標硬移到道路邊。
+   只拿道路幾何資訊來決定「車格旋轉方向」。
+
+   這可以避免上一版車格被推得離道路太遠。
+===================================================== */
+
+function nearestPointOnSegment(
+  point,
+  a,
+  b
+) {
+  const abX =
+    b.x - a.x;
+
+  const abY =
+    b.y - a.y;
+
+  const apX =
+    point.x - a.x;
+
+  const apY =
+    point.y - a.y;
+
+  const lengthSquared =
+    abX * abX +
+    abY * abY;
+
+  if (
+    lengthSquared === 0
+  ) {
+    return {
+      distance:
+        Math.hypot(
+          point.x - a.x,
+          point.y - a.y
+        )
+    };
+  }
+
+  let t =
+    (
+      apX * abX +
+      apY * abY
+    )
+    /
+    lengthSquared;
+
+  t =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        t
+      )
+    );
+
+  const nearestX =
+    a.x +
+    abX * t;
+
+  const nearestY =
+    a.y +
+    abY * t;
+
+  return {
+    distance:
+      Math.hypot(
+        point.x - nearestX,
+        point.y - nearestY
+      )
+  };
+}
+
+function getRoadRotation(
+  parking
+) {
+  const point =
+    map.project([
+      parking.lng,
+      parking.lat
+    ]);
+
+  const radius =
+    34;
+
+  const features =
+    map.queryRenderedFeatures(
+      [
+        [
+          point.x - radius,
+          point.y - radius
+        ],
+        [
+          point.x + radius,
+          point.y + radius
+        ]
+      ]
+    );
+
+  const desiredRoadName =
+    normalizeRoadName(
+      parking.roadName
+    );
+
+  let best =
+    null;
+
+  for (
+    const feature
+    of features
+  ) {
+    if (
+      !feature.geometry ||
+      feature.layer?.type !== "line"
+    ) {
+      continue;
+    }
+
+    const layerID =
+      String(
+        feature.layer?.id || ""
+      ).toLowerCase();
+
+    const sourceLayer =
+      String(
+        feature.layer?.["source-layer"] || ""
+      ).toLowerCase();
+
+    const roadKeyword =
+      `${layerID} ${sourceLayer}`;
+
+    if (
+      !/road|street|highway|transport|motorway|trunk|primary|secondary|tertiary|residential|service|bridge|tunnel/
+        .test(roadKeyword)
+    ) {
+      continue;
+    }
+
+    const properties =
+      feature.properties || {};
+
+    const featureRoadName =
+      normalizeRoadName(
+        [
+          properties.name,
+          properties.name_zh,
+          properties["name:zh"],
+          properties.ref
+        ]
+        .filter(Boolean)
+        .join(" ")
+      );
+
+    /*
+      有路名時優先找同一條路。
+      這可以大幅降低路口抓錯另一條道路的機率。
+    */
+    let namePenalty =
+      0;
+
+    if (
+      desiredRoadName &&
+      featureRoadName
+    ) {
+      const matches =
+        featureRoadName.includes(
+          desiredRoadName
+        )
+        ||
+        desiredRoadName.includes(
+          featureRoadName
+        );
+
+      if (!matches) {
+        namePenalty =
+          24;
+      }
+    }
+
+    let lines =
+      [];
+
+    if (
+      feature.geometry.type ===
+      "LineString"
+    ) {
+      lines = [
+        feature.geometry.coordinates
+      ];
+    }
+    else if (
+      feature.geometry.type ===
+      "MultiLineString"
+    ) {
+      lines =
+        feature.geometry.coordinates;
+    }
+    else {
+      continue;
+    }
+
+    for (
+      const line
+      of lines
+    ) {
+      for (
+        let i = 0;
+        i < line.length - 1;
+        i++
+      ) {
+        const a =
+          map.project(
+            line[i]
+          );
+
+        const b =
+          map.project(
+            line[i + 1]
+          );
+
+        const nearest =
+          nearestPointOnSegment(
+            point,
+            a,
+            b
+          );
+
+        const score =
+          nearest.distance +
+          namePenalty;
+
+        if (
+          !best ||
+          score < best.score
+        ) {
+          let angle =
+            Math.atan2(
+              b.y - a.y,
+              b.x - a.x
+            )
+            *
+            180
+            /
+            Math.PI;
+
+          /*
+            長方形 180 度看起來相同，
+            所以壓成 -90 ~ 90，避免奇怪翻轉。
+          */
+          while (
+            angle > 90
+          ) {
+            angle -= 180;
+          }
+
+          while (
+            angle < -90
+          ) {
+            angle += 180;
+          }
+
+          best = {
+            score,
+            distance:
+              nearest.distance,
+            angle
+          };
+        }
+      }
+    }
+  }
+
+  /*
+    太遠的道路不要硬套方向。
+  */
+  if (
+    !best ||
+    best.distance > 38
+  ) {
+    return 0;
+  }
+
+  return best.angle;
+}
+
+/* =====================================================
+   Individual parking icons
+===================================================== */
+
+const STATUS_COLORS = {
+  empty: "#22c55e",
+  occupied: "#ef4444",
+  unknown: "#9ca3af"
+};
+
+const BORDER_COLORS = {
+  normal: "#ffffff",
+  disabled: "#2563eb",
+  loading: "#f59e0b",
+  family: "#d946ef"
+};
+
+function createParkingIcon(
+  name,
+  fillColor,
+  borderColor
+) {
+  const width =
+    38;
+
+  const height =
+    14;
+
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+  canvas.width =
+    width;
+
+  canvas.height =
+    height;
+
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
+
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  ctx.fillStyle =
+    borderColor;
+
+  ctx.fillRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+  /*
+    特殊車位外框較粗，
+    一般車格維持白色細框。
+  */
+  const inset =
+    borderColor === "#ffffff"
+      ? 2
+      : 3;
+
+  ctx.fillStyle =
+    fillColor;
+
+  ctx.fillRect(
+    inset,
+    inset,
+    width - inset * 2,
+    height - inset * 2
+  );
+
+  const imageData =
+    ctx.getImageData(
+      0,
+      0,
+      width,
+      height
+    );
+
+  if (
+    !map.hasImage(name)
+  ) {
+    map.addImage(
+      name,
+      imageData,
+      {
+        pixelRatio: 1
+      }
+    );
+  }
+}
+
+function registerParkingIcons() {
+  for (
+    const [
+      statusKey,
+      fillColor
+    ]
+    of Object.entries(
+      STATUS_COLORS
+    )
+  ) {
+    for (
+      const [
+        specialKey,
+        borderColor
+      ]
+      of Object.entries(
+        BORDER_COLORS
+      )
+    ) {
+      createParkingIcon(
+        `parking-${statusKey}-${specialKey}`,
+        fillColor,
+        borderColor
+      );
+    }
+  }
+}
+
+/* =====================================================
+   Source / high-zoom layer
+===================================================== */
+
+function ensureParkingSourceAndLayer() {
+  registerParkingIcons();
+
+  if (
+    !map.getSource(
+      "parking-source"
+    )
+  ) {
+    map.addSource(
+      "parking-source",
+      {
+        type: "geojson",
+
+        data: {
+          type: "FeatureCollection",
+          features: []
+        }
+      }
+    );
+  }
+
+  if (
+    !map.getLayer(
+      "parking-layer"
+    )
+  ) {
+    map.addLayer({
+      id: "parking-layer",
+
+      type: "symbol",
+
+      source: "parking-source",
+
+      layout: {
+        "icon-image": [
+          "concat",
+          "parking-",
+          ["get", "statusKey"],
+          "-",
+          ["get", "specialKey"]
+        ],
+
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+
+          16.8, 0.72,
+          18, 0.96,
+          19, 1.15
+        ],
+
+        "icon-rotate": [
+          "get",
+          "rotation"
+        ],
+
+        "icon-rotation-alignment":
+          "map",
+
+        "icon-pitch-alignment":
+          "map",
+
+        "icon-allow-overlap":
+          true,
+
+        "icon-ignore-placement":
+          true
+      }
+    });
+  }
+}
+
+function buildIndividualFeatureCollection(
+  list
+) {
+  return {
+    type: "FeatureCollection",
+
+    features:
+      list.map(
+        parking => {
+          /*
+            位置使用政府原始座標。
+            只調整方向，不再位移到道路中心或路肩。
+          */
+          const rotation =
+            getRoadRotation(
+              parking
+            );
+
+          return {
+            type: "Feature",
+
+            geometry: {
+              type: "Point",
+
+              coordinates: [
+                parking.lng,
+                parking.lat
+              ]
+            },
+
+            properties: {
+              id:
+                parking.id || "",
+
+              cellId:
+                parking.cellId || "",
+
+              roadName:
+                parking.roadName || "",
+
+              name:
+                parking.name || "",
+
+              memo:
+                parking.memo || "",
+
+              pay:
+                parking.pay || "",
+
+              payCash:
+                parking.payCash || "",
+
+              hour:
+                parking.hour || "",
+
+              statusKey:
+                parking.statusKey || "unknown",
+
+              displayStatus:
+                parking.displayStatus || "狀態未知",
+
+              markerColor:
+                parking.markerColor || "#9ca3af",
+
+              specialKey:
+                parking.specialKey || "normal",
+
+              specialLabel:
+                parking.specialLabel || "一般車格",
+
+              borderColor:
+                parking.borderColor || "#ffffff",
+
+              lat:
+                parking.lat,
+
+              lng:
+                parking.lng,
+
+              rotation
+            }
+          };
+        }
+      )
+  };
+}
+
+/* =====================================================
+   Low-zoom grouped parking bars
+===================================================== */
+
+function clearGroupMarkers() {
+  groupMarkers.forEach(
+    marker =>
+      marker.remove()
+  );
+
+  groupMarkers =
+    [];
+}
+
+function buildGradient(
+  group
+) {
+  const total =
+    group.empty +
+    group.occupied +
+    group.unknown;
+
+  if (
+    total <= 0
+  ) {
+    return "#9ca3af";
+  }
+
+  const emptyEnd =
+    group.empty /
+    total *
+    100;
+
+  const occupiedEnd =
+    (
+      group.empty +
+      group.occupied
+    )
+    /
+    total *
+    100;
+
+  return `
+    linear-gradient(
+      to right,
+      #22c55e 0%,
+      #22c55e ${emptyEnd}%,
+      #ef4444 ${emptyEnd}%,
+      #ef4444 ${occupiedEnd}%,
+      #9ca3af ${occupiedEnd}%,
+      #9ca3af 100%
+    )
+  `;
+}
+
+function groupVisibleParking(
+  list
+) {
+  const zoom =
+    map.getZoom();
+
+  /*
+    縮越小，合併範圍越大。
+  */
+  const gridSize =
+    zoom < 16
+      ? 58
+      : 46;
+
+  const groups =
+    new Map();
+
+  for (
+    const parking
+    of list
+  ) {
+    const projected =
+      map.project([
+        parking.lng,
+        parking.lat
+      ]);
+
+    const xBucket =
+      Math.floor(
+        projected.x /
+        gridSize
+      );
+
+    const yBucket =
+      Math.floor(
+        projected.y /
+        gridSize
+      );
+
+    /*
+      加入 roadName，避免十字路口不同道路被硬併在一起。
+    */
+    const roadKey =
+      normalizeRoadName(
+        parking.roadName
+      )
+      ||
+      "unknown-road";
+
+    const key =
+      `${roadKey}:${xBucket}:${yBucket}`;
+
+    if (
+      !groups.has(key)
+    ) {
+      groups.set(
+        key,
+        {
+          items: [],
+          empty: 0,
+          occupied: 0,
+          unknown: 0,
+          specialKeys:
+            new Set()
+        }
+      );
+    }
+
+    const group =
+      groups.get(key);
+
+    group.items.push(
+      parking
+    );
+
+    group[
+      parking.statusKey ||
+      "unknown"
+    ]++;
+
+    group.specialKeys.add(
+      parking.specialKey ||
+      "normal"
+    );
+  }
+
+  return [
+    ...groups.values()
+  ];
+}
+
+function renderGroupedParking(
+  list
+) {
+  clearGroupMarkers();
+
+  /*
+    高縮放個別 layer 清空。
+  */
+  map
+    .getSource(
+      "parking-source"
+    )
+    .setData({
+      type: "FeatureCollection",
+      features: []
+    });
+
+  const groups =
+    groupVisibleParking(
+      list
+    );
+
+  groups.forEach(
+    group => {
+      const lat =
+        group.items.reduce(
+          (sum, item) =>
+            sum + item.lat,
+          0
+        )
+        /
+        group.items.length;
+
+      const lng =
+        group.items.reduce(
+          (sum, item) =>
+            sum + item.lng,
+          0
+        )
+        /
+        group.items.length;
+
+      /*
+        用其中一個車格判斷道路方向。
+        不改位置，只旋轉色帶。
+      */
+      const representative =
+        group.items[
+          Math.floor(
+            group.items.length /
+            2
+          )
+        ];
+
+      const rotation =
+        getRoadRotation(
+          representative
+        );
+
+      const element =
+        document.createElement(
+          "div"
+        );
+
+      element.className =
+        "group-parking-bar";
+
+      element.style.background =
+        buildGradient(
+          group
+        );
+
+      /*
+        群組若只包含一種特殊車位，
+        仍保留特殊外框。
+        混合多種時用白框避免誤判。
+      */
+      if (
+        group.specialKeys.size === 1
+      ) {
+        const onlyType =
+          [
+            ...group.specialKeys
+          ][0];
+
+        element.style.borderColor =
+          BORDER_COLORS[
+            onlyType
+          ]
+          ||
+          "#ffffff";
+      }
+
+      element.title =
+        `${group.items.length} 個車格`;
+
+      const marker =
+        new maplibregl.Marker({
+          element,
+          anchor: "center",
+          rotation,
+          rotationAlignment: "map"
+        })
+        .setLngLat([
+          lng,
+          lat
+        ])
+        .addTo(map);
+
+      /*
+        點群組 = 放大，讓個別車格拆開。
+      */
+      element.addEventListener(
+        "click",
+        event => {
+          event.stopPropagation();
+
+          map.easeTo({
+            center: [
+              lng,
+              lat
+            ],
+
+            zoom:
+              Math.max(
+                INDIVIDUAL_ZOOM,
+                map.getZoom() + 1.2
+              ),
+
+            duration:
+              650
+          });
+        }
+      );
+
+      groupMarkers.push(
+        marker
+      );
+    }
+  );
+}
+
+/* =====================================================
+   Filters
+===================================================== */
+
+function getActiveStatusFilters() {
+  const filters =
+    new Set();
+
+  if (
+    filterEmpty.checked
+  ) {
+    filters.add("empty");
+  }
+
+  if (
+    filterOccupied.checked
+  ) {
+    filters.add("occupied");
+  }
+
+  if (
+    filterUnknown.checked
+  ) {
+    filters.add("unknown");
+  }
+
+  return filters;
+}
+
+function getActiveTypeFilters() {
+  const filters =
+    new Set();
+
+  if (
+    filterNormal.checked
+  ) {
+    filters.add("normal");
+  }
+
+  if (
+    filterDisabled.checked
+  ) {
+    filters.add("disabled");
+  }
+
+  if (
+    filterLoading.checked
+  ) {
+    filters.add("loading");
+  }
+
+  if (
+    filterFamily.checked
+  ) {
+    filters.add("family");
+  }
+
+  return filters;
+}
+
+function updateFilterCounts(
+  visible
+) {
+  const statusCounts = {
+    empty: 0,
+    occupied: 0,
+    unknown: 0
+  };
+
+  const typeCounts = {
+    normal: 0,
+    disabled: 0,
+    loading: 0,
+    family: 0
+  };
+
+  visible.forEach(
+    parking => {
+      const statusKey =
+        parking.statusKey ||
+        "unknown";
+
+      const specialKey =
+        parking.specialKey ||
+        "normal";
+
+      if (
+        statusCounts[
+          statusKey
+        ]
+        !== undefined
+      ) {
+        statusCounts[
+          statusKey
+        ]++;
+      }
+
+      if (
+        typeCounts[
+          specialKey
+        ]
+        !== undefined
+      ) {
+        typeCounts[
+          specialKey
+        ]++;
+      }
+    }
+  );
+
+  emptyCount.textContent =
+    statusCounts.empty;
+
+  occupiedCount.textContent =
+    statusCounts.occupied;
+
+  unknownCount.textContent =
+    statusCounts.unknown;
+
+  normalCount.textContent =
+    typeCounts.normal;
+
+  disabledCount.textContent =
+    typeCounts.disabled;
+
+  loadingCount.textContent =
+    typeCounts.loading;
+
+  familyCount.textContent =
+    typeCounts.family;
+}
+
+/* =====================================================
+   Render
+===================================================== */
+
+function renderParking() {
+  if (
+    !mapReady ||
+    !map.getSource(
+      "parking-source"
+    )
+  ) {
+    return;
+  }
+
+  clearGroupMarkers();
+
+  if (
+    !parkingData.length
+  ) {
+    map
+      .getSource(
+        "parking-source"
+      )
+      .setData({
+        type: "FeatureCollection",
+        features: []
+      });
+
+    bottomCount.textContent =
+      "目前沒有停車格資料";
+
+    return;
+  }
+
+  const zoom =
+    map.getZoom();
+
+  if (
+    zoom <
+    MIN_ZOOM
+  ) {
+    map
+      .getSource(
+        "parking-source"
+      )
+      .setData({
+        type: "FeatureCollection",
+        features: []
+      });
+
+    bottomCount.textContent =
+      "請放大地圖查看停車格";
+
+    return;
+  }
+
+  const bounds =
+    map.getBounds();
+
+  const visibleAll =
+    parkingData.filter(
+      parking =>
+        bounds.contains([
+          parking.lng,
+          parking.lat
+        ])
+    );
+
+  updateFilterCounts(
+    visibleAll
+  );
+
+  const statusFilters =
+    getActiveStatusFilters();
+
+  const typeFilters =
+    getActiveTypeFilters();
+
+  const filtered =
+    visibleAll.filter(
+      parking =>
+        statusFilters.has(
+          parking.statusKey ||
+          "unknown"
+        )
+        &&
+        typeFilters.has(
+          parking.specialKey ||
+          "normal"
+        )
+    );
+
+  const list =
+    filtered.slice(
+      0,
+      MAX_VISIBLE_MARKERS
+    );
+
+  /*
+    縮小：合併成色帶。
+    放大：拆成個別車格。
+  */
+  if (
+    zoom <
+    INDIVIDUAL_ZOOM
+  ) {
+    renderGroupedParking(
+      list
+    );
+  }
+  else {
+    map
+      .getSource(
+        "parking-source"
+      )
+      .setData(
+        buildIndividualFeatureCollection(
+          list
+        )
+      );
+  }
+
+  if (
+    visibleAll.length === 0
+  ) {
+    bottomCount.textContent =
+      "目前畫面內沒有停車格";
+  }
+  else if (
+    filtered.length ===
+    visibleAll.length
+  ) {
+    bottomCount.textContent =
+      `目前畫面內有 ${visibleAll.length.toLocaleString()} 個停車格`;
+  }
+  else {
+    bottomCount.textContent =
+      `目前顯示 ${filtered.length.toLocaleString()} / ${visibleAll.length.toLocaleString()} 個停車格`;
+  }
+}
+
+/* =====================================================
+   Navigation / popup
+===================================================== */
+
+function openNavigation(
+  lat,
+  lng
+) {
+  const url =
+    "https://www.google.com/maps/dir/?api=1"
+    +
+    "&destination="
+    +
+    encodeURIComponent(
+      `${lat},${lng}`
+    )
+    +
+    "&travelmode=driving";
+
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+function showParkingPopup(
+  feature
+) {
+  const p =
+    feature.properties || {};
+
+  const lat =
+    Number(p.lat);
+
+  const lng =
+    Number(p.lng);
+
+  const specialColor =
+    p.borderColor ||
+    "#ffffff";
+
+  const popupHTML = `
+    <div class="parking-popup">
+
+      <div class="parking-title">
+        路邊停車格
+      </div>
+
+      <div class="parking-status-line">
+
+        <span
+          class="popup-space"
+          style="
+            background:${escapeHTML(
+              p.markerColor ||
+              "#9ca3af"
+            )};
+            border-color:${escapeHTML(
+              specialColor
+            )};
+          "
+        ></span>
+
+        <strong>
+          ${escapeHTML(
+            p.displayStatus ||
+            "狀態未知"
+          )}
+        </strong>
+
+      </div>
+
+      <div
+        class="popup-special"
+        style="color:${escapeHTML(
+          specialColor === "#ffffff"
+            ? "#374151"
+            : specialColor
+        )}"
+      >
+        ${escapeHTML(
+          p.specialLabel ||
+          "一般車格"
+        )}
+      </div>
+
+      <div class="row">
+        車格編號：
+        <strong>
+          ${escapeHTML(
+            p.cellId ||
+            p.id ||
+            "未提供"
+          )}
+        </strong>
+      </div>
+
+      <div class="row">
+        路段：
+        ${escapeHTML(
+          p.roadName ||
+          "未提供"
+        )}
+      </div>
+
+      <div class="row">
+        類型：
+        ${escapeHTML(
+          p.name ||
+          "未提供"
+        )}
+      </div>
+
+      <div class="row">
+        收費方式：
+        ${escapeHTML(
+          p.pay ||
+          "未提供"
+        )}
+      </div>
+
+      <div class="row">
+        收費：
+        ${escapeHTML(
+          p.payCash ||
+          "未提供"
+        )}
+      </div>
+
+      <div class="row">
+        收費時間：
+        ${escapeHTML(
+          p.hour ||
+          "未提供"
+        )}
+      </div>
+
+      <button
+        class="navigation-button"
+        onclick="openNavigation(${lat}, ${lng})"
+      >
+        導航至此車格
+      </button>
+
+    </div>
+  `;
+
+  new maplibregl.Popup({
+    closeButton: false,
+    closeOnClick: true,
+    offset: 16
+  })
+  .setLngLat(
+    feature.geometry.coordinates
+  )
+  .setHTML(
+    popupHTML
+  )
+  .addTo(map);
+}
+
+/* =====================================================
+   GPS
+===================================================== */
+
+function setUserLocation(
+  lng,
+  lat
+) {
+  if (
+    userMarker
+  ) {
+    userMarker.remove();
+  }
+
+  const element =
+    document.createElement(
+      "div"
+    );
+
+  element.className =
+    "user-dot";
+
+  userMarker =
+    new maplibregl.Marker({
+      element,
+      anchor: "center"
+    })
+    .setLngLat([
+      lng,
+      lat
+    ])
+    .setPopup(
+      new maplibregl.Popup({
+        offset: 16,
+        closeButton: false
+      })
+      .setText(
+        "你的目前位置"
+      )
+    )
+    .addTo(map);
+}
+
+function locateUser() {
+  if (
+    !navigator.geolocation
+  ) {
+    map.jumpTo({
+      center: DEFAULT_CENTER,
+      zoom: 16,
+      pitch: 0,
+      bearing: 0
+    });
+
+    return;
+  }
+
+  navigator
+    .geolocation
+    .getCurrentPosition(
+      position => {
+        const lat =
+          position.coords.latitude;
+
+        const lng =
+          position.coords.longitude;
+
+        setUserLocation(
+          lng,
+          lat
+        );
+
+        map.jumpTo({
+          center: [
+            lng,
+            lat
+          ],
+
+          zoom: 16,
+
+          pitch: 0,
+
+          bearing: 0
+        });
+
+        renderParking();
+      },
+
+      () => {
+        map.jumpTo({
+          center: DEFAULT_CENTER,
+          zoom: 16,
+          pitch: 0,
+          bearing: 0
+        });
+
+        renderParking();
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+}
+
+function moveToUserLocation() {
+  if (
+    !navigator.geolocation
+  ) {
+    alert(
+      "此裝置不支援定位功能"
+    );
+
+    return;
+  }
+
+  locateButton.disabled =
+    true;
+
+  navigator
+    .geolocation
+    .getCurrentPosition(
+      position => {
+        const lat =
+          position.coords.latitude;
+
+        const lng =
+          position.coords.longitude;
+
+        setUserLocation(
+          lng,
+          lat
+        );
+
+        map.easeTo({
+          center: [
+            lng,
+            lat
+          ],
+
+          zoom:
+            Math.max(
+              map.getZoom(),
+              16
+            ),
+
+          bearing: 0,
+
+          pitch: 0,
+
+          duration: 800
+        });
+
+        locateButton.disabled =
+          false;
+      },
+
+      () => {
+        alert(
+          "目前無法取得你的位置，請確認瀏覽器定位權限。"
+        );
+
+        locateButton.disabled =
+          false;
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+}
+
+/* =====================================================
+   Events
+===================================================== */
+
+[
+  filterEmpty,
+  filterOccupied,
+  filterUnknown,
+  filterNormal,
+  filterDisabled,
+  filterLoading,
+  filterFamily
+]
+.forEach(
+  checkbox => {
+    checkbox.addEventListener(
+      "change",
+      renderParking
+    );
+  }
+);
+
+selectAllButton.addEventListener(
+  "click",
+  () => {
+    filterEmpty.checked =
+      true;
+
+    filterOccupied.checked =
+      true;
+
+    filterUnknown.checked =
+      true;
+
+    filterNormal.checked =
+      true;
+
+    filterDisabled.checked =
+      true;
+
+    filterLoading.checked =
+      true;
+
+    filterFamily.checked =
+      true;
+
+    renderParking();
+  }
+);
+
+clearAllButton.addEventListener(
+  "click",
+  () => {
+    filterEmpty.checked =
+      false;
+
+    filterOccupied.checked =
+      false;
+
+    filterUnknown.checked =
+      false;
+
+    filterNormal.checked =
+      false;
+
+    filterDisabled.checked =
+      false;
+
+    filterLoading.checked =
+      false;
+
+    filterFamily.checked =
+      false;
+
+    renderParking();
+  }
+);
+
+reloadButton.addEventListener(
+  "click",
+  refreshLiveParking
+);
+
+locateButton.addEventListener(
+  "click",
+  moveToUserLocation
+);
+
+/* =====================================================
+   Map load
+===================================================== */
+
+map.on(
+  "load",
+  async () => {
+    simplifyMapStyle();
+
+    ensureParkingSourceAndLayer();
+
+    mapReady =
+      true;
+
+    map.on(
+      "click",
+      "parking-layer",
+      event => {
+        const feature =
+          event.features &&
+          event.features[0];
+
+        if (
+          feature
+        ) {
+          showParkingPopup(
+            feature
+          );
+        }
+      }
+    );
+
+    map.on(
+      "mouseenter",
+      "parking-layer",
+      () => {
+        map
+          .getCanvas()
+          .style
+          .cursor =
+          "pointer";
+      }
+    );
+
+    map.on(
+      "mouseleave",
+      "parking-layer",
+      () => {
+        map
+          .getCanvas()
+          .style
+          .cursor =
+          "";
+      }
+    );
+
+    locateUser();
+
+    try {
+      await loadStaticParking();
+    }
+    catch (error) {
+      console.error(error);
+
+      await refreshLiveParking();
+    }
+  }
+);
+
+map.on(
+  "moveend",
+  renderParking
+);
+
+map.on(
+  "zoomend",
+  renderParking
+);
+
+map.on(
+  "error",
+  event => {
+    console.warn(
+      "地圖載入錯誤：",
+      event
+    );
+  }
+);
+</script>
+
+</body>
+</html>
