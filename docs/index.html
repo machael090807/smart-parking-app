@@ -519,7 +519,8 @@ input {
 }
 
 .navigation-button {
-  width: calc(100% - 12px);
+  width: 190px;
+  max-width: calc(100% - 20px);
   min-height: 44px;
 
   margin: 14px auto 0 !important;
@@ -540,10 +541,15 @@ input {
   cursor: pointer;
 
   display: flex !important;
-  align-items: center;
-  justify-content: center;
+  align-items: center !important;
+  justify-content: center !important;
 
   text-align: center !important;
+
+  float: none !important;
+  position: relative;
+  left: auto;
+  right: auto;
 }
 
 .navigation-button:hover {
@@ -555,6 +561,18 @@ input {
   border-radius: 14px;
   box-shadow:
     0 8px 28px rgba(0,0,0,.16);
+}
+
+
+.parking-popup {
+  width: 230px;
+  max-width: 72vw;
+  margin: 0 auto;
+}
+
+.parking-popup .navigation-button {
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 .maplibregl-popup-close-button {
@@ -682,7 +700,7 @@ input {
         </div>
 
         <div class="menu-version">
-          版本：v1.0.8
+          版本：v1.0.9
         </div>
       </div>
 
@@ -861,7 +879,7 @@ input {
    Config
 ===================================================== */
 
-const APP_VERSION = "1.0.8";
+const APP_VERSION = "1.0.9";
 
 const LIVE_API_URL =
   "https://smart-parking-app-api.vercel.app/api/parking";
@@ -1753,7 +1771,7 @@ async function refreshLiveParking({ silent = false } = {}) {
 /* =====================================================
    Native MapLibre parking markers
 
-   v1.0.8:
+   v1.0.9:
    - 不使用 DOM Marker 顯示車格或群組
    - 所有點位都由 MapLibre 原生圖層繪製
    - 拖動地圖時會固定在地理座標，不會晃動
@@ -2252,56 +2270,6 @@ function ensureParkingSourceAndLayer() {
   /*
     Cluster 中間顯示包含幾個車格。
   */
-  if (
-    !map.getLayer(
-      "parking-cluster-count"
-    )
-  ) {
-    map.addLayer({
-      id: "parking-cluster-count",
-
-      type: "symbol",
-
-      minzoom: MIN_ZOOM,
-
-      source: "parking-source",
-
-      filter: [
-        "has",
-        "point_count"
-      ],
-
-      layout: {
-        "text-field":
-          "{point_count_abbreviated}",
-
-        "text-size":
-          10,
-
-        "text-font": [
-          "Noto Sans Regular"
-        ],
-
-        "text-allow-overlap":
-          true,
-
-        "text-ignore-placement":
-          true
-      },
-
-      paint: {
-        "text-color":
-          "#111827",
-
-        "text-halo-color":
-          "#ffffff",
-
-        "text-halo-width":
-          1.5
-      }
-    });
-  }
-
   /*
     單一停車格：
     固定使用足夠大的圓點，不會在拆開瞬間突然變得很小。
@@ -2403,7 +2371,7 @@ function ensureParkingSourceAndLayer() {
   }
 
   /*
-    放大到一定程度後直接顯示車格編號。
+    只有放大到接近最細節層級後，才顯示車格編號。
     使用同一個 MapLibre source，所以文字會跟著地圖座標固定。
   */
   if (
@@ -2418,7 +2386,7 @@ function ensureParkingSourceAndLayer() {
 
       source: "parking-source",
 
-      minzoom: 18.1,
+      minzoom: 18.75,
 
       filter: [
         "!",
@@ -2451,7 +2419,7 @@ function ensureParkingSourceAndLayer() {
             "zoom"
           ],
 
-          18.1, 9,
+          18.75, 9.5,
           19, 11
         ],
 
@@ -3435,7 +3403,7 @@ map.on(
     locateUser();
 
     /*
-      v1.0.8：
+      v1.0.9：
       先顯示 GitHub Pages 部署時已產生好的 parking.json。
       使用者先看到停車格，不必等 Vercel / 政府 API。
 
