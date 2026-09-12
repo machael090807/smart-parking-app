@@ -461,41 +461,20 @@ input {
 }
 
 /* =====================================================
-   User / grouped parking dots
+   User location
 ===================================================== */
 
 .user-dot {
   width: 18px;
   height: 18px;
+
   border: 3px solid #fff;
   border-radius: 50%;
+
   background: #1677ff;
+
   box-shadow:
     0 0 0 4px rgba(22,119,255,.25);
-}
-
-/*
-  縮小地圖時，多個車格合併成一個圓點。
-  圓點內使用 conic-gradient 保留紅 / 綠 / 灰比例。
-*/
-.group-parking-dot {
-  width: 25px;
-  height: 25px;
-
-  border: 3px solid #ffffff;
-  border-radius: 50%;
-
-  box-shadow:
-    0 2px 6px rgba(0,0,0,.22);
-
-  cursor: pointer;
-
-  transition:
-    transform 0.15s ease;
-}
-
-.group-parking-dot:hover {
-  transform: scale(1.10);
 }
 
 /* =====================================================
@@ -540,10 +519,13 @@ input {
 }
 
 .navigation-button {
-  width: 100%;
-  min-height: 42px;
-  margin: 13px auto 0;
+  width: calc(100% - 12px);
+  min-height: 44px;
+
+  margin: 14px auto 0 !important;
   padding: 10px 14px;
+
+  box-sizing: border-box;
 
   border: 0;
   border-radius: 10px;
@@ -553,13 +535,15 @@ input {
 
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
 
   cursor: pointer;
 
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  text-align: center;
+
+  text-align: center !important;
 }
 
 .navigation-button:hover {
@@ -698,7 +682,7 @@ input {
         </div>
 
         <div class="menu-version">
-          版本：v1.0.7
+          版本：v1.0.8
         </div>
       </div>
 
@@ -877,7 +861,7 @@ input {
    Config
 ===================================================== */
 
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 
 const LIVE_API_URL =
   "https://smart-parking-app-api.vercel.app/api/parking";
@@ -1767,296 +1751,14 @@ async function refreshLiveParking({ silent = false } = {}) {
 }
 
 /* =====================================================
-   Road direction
+   Native MapLibre parking markers
 
-   v1.0.5:
-   不再把政府車格座標硬移到道路邊。
-   只拿道路幾何資訊來決定「車格旋轉方向」。
-
-   這可以避免上一版車格被推得離道路太遠。
-===================================================== */
-
-function nearestPointOnSegment(
-  point,
-  a,
-  b
-) {
-  const abX =
-    b.x - a.x;
-
-  const abY =
-    b.y - a.y;
-
-  const apX =
-    point.x - a.x;
-
-  const apY =
-    point.y - a.y;
-
-  const lengthSquared =
-    abX * abX +
-    abY * abY;
-
-  if (
-    lengthSquared === 0
-  ) {
-    return {
-      distance:
-        Math.hypot(
-          point.x - a.x,
-          point.y - a.y
-        )
-    };
-  }
-
-  let t =
-    (
-      apX * abX +
-      apY * abY
-    )
-    /
-    lengthSquared;
-
-  t =
-    Math.max(
-      0,
-      Math.min(
-        1,
-        t
-      )
-    );
-
-  const nearestX =
-    a.x +
-    abX * t;
-
-  const nearestY =
-    a.y +
-    abY * t;
-
-  return {
-    distance:
-      Math.hypot(
-        point.x - nearestX,
-        point.y - nearestY
-      )
-  };
-}
-
-function getRoadRotation(
-  parking
-) {
-  const point =
-    map.project([
-      parking.lng,
-      parking.lat
-    ]);
-
-  const radius =
-    34;
-
-  const features =
-    map.queryRenderedFeatures(
-      [
-        [
-          point.x - radius,
-          point.y - radius
-        ],
-        [
-          point.x + radius,
-          point.y + radius
-        ]
-      ]
-    );
-
-  const desiredRoadName =
-    normalizeRoadName(
-      parking.roadName
-    );
-
-  let best =
-    null;
-
-  for (
-    const feature
-    of features
-  ) {
-    if (
-      !feature.geometry ||
-      feature.layer?.type !== "line"
-    ) {
-      continue;
-    }
-
-    const layerID =
-      String(
-        feature.layer?.id || ""
-      ).toLowerCase();
-
-    const sourceLayer =
-      String(
-        feature.layer?.["source-layer"] || ""
-      ).toLowerCase();
-
-    const roadKeyword =
-      `${layerID} ${sourceLayer}`;
-
-    if (
-      !/road|street|highway|transport|motorway|trunk|primary|secondary|tertiary|residential|service|bridge|tunnel/
-        .test(roadKeyword)
-    ) {
-      continue;
-    }
-
-    const properties =
-      feature.properties || {};
-
-    const featureRoadName =
-      normalizeRoadName(
-        [
-          properties.name,
-          properties.name_zh,
-          properties["name:zh"],
-          properties.ref
-        ]
-        .filter(Boolean)
-        .join(" ")
-      );
-
-    /*
-      有路名時優先找同一條路。
-      這可以大幅降低路口抓錯另一條道路的機率。
-    */
-    let namePenalty =
-      0;
-
-    if (
-      desiredRoadName &&
-      featureRoadName
-    ) {
-      const matches =
-        featureRoadName.includes(
-          desiredRoadName
-        )
-        ||
-        desiredRoadName.includes(
-          featureRoadName
-        );
-
-      if (!matches) {
-        namePenalty =
-          24;
-      }
-    }
-
-    let lines =
-      [];
-
-    if (
-      feature.geometry.type ===
-      "LineString"
-    ) {
-      lines = [
-        feature.geometry.coordinates
-      ];
-    }
-    else if (
-      feature.geometry.type ===
-      "MultiLineString"
-    ) {
-      lines =
-        feature.geometry.coordinates;
-    }
-    else {
-      continue;
-    }
-
-    for (
-      const line
-      of lines
-    ) {
-      for (
-        let i = 0;
-        i < line.length - 1;
-        i++
-      ) {
-        const a =
-          map.project(
-            line[i]
-          );
-
-        const b =
-          map.project(
-            line[i + 1]
-          );
-
-        const nearest =
-          nearestPointOnSegment(
-            point,
-            a,
-            b
-          );
-
-        const score =
-          nearest.distance +
-          namePenalty;
-
-        if (
-          !best ||
-          score < best.score
-        ) {
-          let angle =
-            Math.atan2(
-              b.y - a.y,
-              b.x - a.x
-            )
-            *
-            180
-            /
-            Math.PI;
-
-          /*
-            長方形 180 度看起來相同，
-            所以壓成 -90 ~ 90，避免奇怪翻轉。
-          */
-          while (
-            angle > 90
-          ) {
-            angle -= 180;
-          }
-
-          while (
-            angle < -90
-          ) {
-            angle += 180;
-          }
-
-          best = {
-            score,
-            distance:
-              nearest.distance,
-            angle
-          };
-        }
-      }
-    }
-  }
-
-  /*
-    太遠的道路不要硬套方向。
-  */
-  if (
-    !best ||
-    best.distance > 38
-  ) {
-    return 0;
-  }
-
-  return best.angle;
-}
-
-/* =====================================================
-   Individual parking dots
+   v1.0.8:
+   - 不使用 DOM Marker 顯示車格或群組
+   - 所有點位都由 MapLibre 原生圖層繪製
+   - 拖動地圖時會固定在地理座標，不會晃動
+   - 低縮放時使用原生 cluster 合併
+   - 放大後拆成單一圓點
 ===================================================== */
 
 const STATUS_COLORS = {
@@ -2072,11 +1774,217 @@ const BORDER_COLORS = {
   family: "#d946ef"
 };
 
-/* =====================================================
-   Source / high-zoom dot layer
-===================================================== */
+function createClusterIcon(
+  name,
+  segments
+) {
+  const size =
+    54;
+
+  const canvas =
+    document.createElement(
+      "canvas"
+    );
+
+  canvas.width =
+    size;
+
+  canvas.height =
+    size;
+
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
+
+  ctx.clearRect(
+    0,
+    0,
+    size,
+    size
+  );
+
+  const center =
+    size / 2;
+
+  const radius =
+    20;
+
+  let start =
+    -Math.PI / 2;
+
+  segments.forEach(
+    segment => {
+      const end =
+        start +
+        Math.PI *
+        2 *
+        segment.ratio;
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        center,
+        center
+      );
+
+      ctx.arc(
+        center,
+        center,
+        radius,
+        start,
+        end
+      );
+
+      ctx.closePath();
+
+      ctx.fillStyle =
+        segment.color;
+
+      ctx.fill();
+
+      start =
+        end;
+    }
+  );
+
+  /*
+    白色外框，讓 cluster 在各種底圖上都清楚。
+  */
+  ctx.beginPath();
+
+  ctx.arc(
+    center,
+    center,
+    radius,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.lineWidth =
+    4;
+
+  ctx.strokeStyle =
+    "#ffffff";
+
+  ctx.stroke();
+
+  const imageData =
+    ctx.getImageData(
+      0,
+      0,
+      size,
+      size
+    );
+
+  if (
+    !map.hasImage(name)
+  ) {
+    map.addImage(
+      name,
+      imageData,
+      {
+        pixelRatio: 2
+      }
+    );
+  }
+}
+
+function registerClusterIcons() {
+  createClusterIcon(
+    "cluster-empty",
+    [
+      {
+        ratio: 1,
+        color: STATUS_COLORS.empty
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-occupied",
+    [
+      {
+        ratio: 1,
+        color: STATUS_COLORS.occupied
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-unknown",
+    [
+      {
+        ratio: 1,
+        color: STATUS_COLORS.unknown
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-empty-occupied",
+    [
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.empty
+      },
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.occupied
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-empty-unknown",
+    [
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.empty
+      },
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.unknown
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-occupied-unknown",
+    [
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.occupied
+      },
+      {
+        ratio: 0.5,
+        color: STATUS_COLORS.unknown
+      }
+    ]
+  );
+
+  createClusterIcon(
+    "cluster-mixed",
+    [
+      {
+        ratio: 1 / 3,
+        color: STATUS_COLORS.empty
+      },
+      {
+        ratio: 1 / 3,
+        color: STATUS_COLORS.occupied
+      },
+      {
+        ratio: 1 / 3,
+        color: STATUS_COLORS.unknown
+      }
+    ]
+  );
+}
 
 function ensureParkingSourceAndLayer() {
+  registerClusterIcons();
+
   if (
     !map.getSource(
       "parking-source"
@@ -2087,6 +1995,73 @@ function ensureParkingSourceAndLayer() {
       {
         type: "geojson",
 
+        cluster: true,
+
+        /*
+          Zoom 16 以下合併。
+          Zoom 17 開始自然拆成單一車格。
+        */
+        clusterMaxZoom: 16,
+
+        clusterRadius: 34,
+
+        /*
+          Cluster 內同時統計紅 / 綠 / 灰數量，
+          讓合併點仍可顯示包含哪些狀態。
+        */
+        clusterProperties: {
+          empty_count: [
+            "+",
+            [
+              "case",
+              [
+                "==",
+                [
+                  "get",
+                  "statusKey"
+                ],
+                "empty"
+              ],
+              1,
+              0
+            ]
+          ],
+
+          occupied_count: [
+            "+",
+            [
+              "case",
+              [
+                "==",
+                [
+                  "get",
+                  "statusKey"
+                ],
+                "occupied"
+              ],
+              1,
+              0
+            ]
+          ],
+
+          unknown_count: [
+            "+",
+            [
+              "case",
+              [
+                "==",
+                [
+                  "get",
+                  "statusKey"
+                ],
+                "unknown"
+              ],
+              1,
+              0
+            ]
+          ]
+        },
+
         data: {
           type: "FeatureCollection",
           features: []
@@ -2095,6 +2070,242 @@ function ensureParkingSourceAndLayer() {
     );
   }
 
+  /*
+    縮小時的合併圓點。
+    使用 MapLibre symbol layer，不使用 HTML DOM Marker。
+  */
+  if (
+    !map.getLayer(
+      "parking-cluster-layer"
+    )
+  ) {
+    map.addLayer({
+      id: "parking-cluster-layer",
+
+      type: "symbol",
+
+      minzoom: MIN_ZOOM,
+
+      source: "parking-source",
+
+      filter: [
+        "has",
+        "point_count"
+      ],
+
+      layout: {
+        "icon-image": [
+          "case",
+
+          /*
+            綠 + 紅 + 灰
+          */
+          [
+            "all",
+            [
+              ">",
+              [
+                "get",
+                "empty_count"
+              ],
+              0
+            ],
+            [
+              ">",
+              [
+                "get",
+                "occupied_count"
+              ],
+              0
+            ],
+            [
+              ">",
+              [
+                "get",
+                "unknown_count"
+              ],
+              0
+            ]
+          ],
+          "cluster-mixed",
+
+          /*
+            綠 + 紅
+          */
+          [
+            "all",
+            [
+              ">",
+              [
+                "get",
+                "empty_count"
+              ],
+              0
+            ],
+            [
+              ">",
+              [
+                "get",
+                "occupied_count"
+              ],
+              0
+            ]
+          ],
+          "cluster-empty-occupied",
+
+          /*
+            綠 + 灰
+          */
+          [
+            "all",
+            [
+              ">",
+              [
+                "get",
+                "empty_count"
+              ],
+              0
+            ],
+            [
+              ">",
+              [
+                "get",
+                "unknown_count"
+              ],
+              0
+            ]
+          ],
+          "cluster-empty-unknown",
+
+          /*
+            紅 + 灰
+          */
+          [
+            "all",
+            [
+              ">",
+              [
+                "get",
+                "occupied_count"
+              ],
+              0
+            ],
+            [
+              ">",
+              [
+                "get",
+                "unknown_count"
+              ],
+              0
+            ]
+          ],
+          "cluster-occupied-unknown",
+
+          /*
+            單一狀態
+          */
+          [
+            ">",
+            [
+              "get",
+              "empty_count"
+            ],
+            0
+          ],
+          "cluster-empty",
+
+          [
+            ">",
+            [
+              "get",
+              "occupied_count"
+            ],
+            0
+          ],
+          "cluster-occupied",
+
+          "cluster-unknown"
+        ],
+
+        "icon-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+
+          14, 0.78,
+          16, 0.92
+        ],
+
+        "icon-allow-overlap":
+          true,
+
+        "icon-ignore-placement":
+          true
+      }
+    });
+  }
+
+  /*
+    Cluster 中間顯示包含幾個車格。
+  */
+  if (
+    !map.getLayer(
+      "parking-cluster-count"
+    )
+  ) {
+    map.addLayer({
+      id: "parking-cluster-count",
+
+      type: "symbol",
+
+      minzoom: MIN_ZOOM,
+
+      source: "parking-source",
+
+      filter: [
+        "has",
+        "point_count"
+      ],
+
+      layout: {
+        "text-field":
+          "{point_count_abbreviated}",
+
+        "text-size":
+          10,
+
+        "text-font": [
+          "Noto Sans Regular"
+        ],
+
+        "text-allow-overlap":
+          true,
+
+        "text-ignore-placement":
+          true
+      },
+
+      paint: {
+        "text-color":
+          "#111827",
+
+        "text-halo-color":
+          "#ffffff",
+
+        "text-halo-width":
+          1.5
+      }
+    });
+  }
+
+  /*
+    單一停車格：
+    固定使用足夠大的圓點，不會在拆開瞬間突然變得很小。
+  */
   if (
     !map.getLayer(
       "parking-layer"
@@ -2105,79 +2316,176 @@ function ensureParkingSourceAndLayer() {
 
       type: "circle",
 
+      minzoom: MIN_ZOOM,
+
       source: "parking-source",
 
+      filter: [
+        "!",
+        [
+          "has",
+          "point_count"
+        ]
+      ],
+
       paint: {
-        /*
-          圓點內部顏色：
-          綠 = 空車格
-          紅 = 已停車
-          灰 = 狀態未知
-        */
         "circle-color": [
           "match",
-          ["get", "statusKey"],
+          [
+            "get",
+            "statusKey"
+          ],
 
           "empty",
-          "#22c55e",
+          STATUS_COLORS.empty,
 
           "occupied",
-          "#ef4444",
+          STATUS_COLORS.occupied,
 
-          "#9ca3af"
-        ],
-
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-
-          16.8, 4.5,
-          18, 6,
-          19, 7.5
+          STATUS_COLORS.unknown
         ],
 
         /*
-          圓點外框：
-          藍 = 身障
-          橘 = 貨車 / 裝卸
-          紫 = 婦幼 / 親子
-          白 = 一般
+          放大時只會變大，不會縮小。
+          最低直徑約 20px，手機也比較好點。
         */
+        "circle-radius": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+
+          16, 9,
+          17, 10,
+          18, 11,
+          19, 12
+        ],
+
         "circle-stroke-color": [
           "match",
-          ["get", "specialKey"],
+          [
+            "get",
+            "specialKey"
+          ],
 
           "disabled",
-          "#2563eb",
+          BORDER_COLORS.disabled,
 
           "loading",
-          "#f59e0b",
+          BORDER_COLORS.loading,
 
           "family",
-          "#d946ef",
+          BORDER_COLORS.family,
 
-          "#ffffff"
+          BORDER_COLORS.normal
         ],
 
         "circle-stroke-width": [
           "match",
-          ["get", "specialKey"],
+          [
+            "get",
+            "specialKey"
+          ],
 
           "normal",
-          1.8,
+          2,
 
-          3
+          3.5
         ],
 
         "circle-opacity":
-          0.96
+          0.97
+      }
+    });
+  }
+
+  /*
+    放大到一定程度後直接顯示車格編號。
+    使用同一個 MapLibre source，所以文字會跟著地圖座標固定。
+  */
+  if (
+    !map.getLayer(
+      "parking-number-layer"
+    )
+  ) {
+    map.addLayer({
+      id: "parking-number-layer",
+
+      type: "symbol",
+
+      source: "parking-source",
+
+      minzoom: 18.1,
+
+      filter: [
+        "!",
+        [
+          "has",
+          "point_count"
+        ]
+      ],
+
+      layout: {
+        "text-field": [
+          "coalesce",
+          [
+            "get",
+            "cellId"
+          ],
+          [
+            "get",
+            "id"
+          ],
+          ""
+        ],
+
+        "text-size": [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "zoom"
+          ],
+
+          18.1, 9,
+          19, 11
+        ],
+
+        /*
+          文字直接以圓點座標為中心。
+        */
+        "text-anchor":
+          "center",
+
+        "text-allow-overlap":
+          true,
+
+        "text-ignore-placement":
+          true
+      },
+
+      paint: {
+        "text-color":
+          "#111827",
+
+        "text-halo-color":
+          "#ffffff",
+
+        "text-halo-width":
+          2,
+
+        "text-halo-blur":
+          0.4
       }
     });
   }
 }
 
-function buildIndividualFeatureCollection(
+function buildParkingFeatureCollection(
   list
 ) {
   return {
@@ -2185,354 +2493,70 @@ function buildIndividualFeatureCollection(
 
     features:
       list.map(
-        parking => {
-          /*
-            v1.0.7：
-            完全使用政府 API 原始座標。
-            不做道路吸附、不移動位置、不依道路旋轉。
-          */
-          return {
-            type: "Feature",
+        parking => ({
+          type: "Feature",
 
-            geometry: {
-              type: "Point",
+          geometry: {
+            type: "Point",
 
-              coordinates: [
-                parking.lng,
-                parking.lat
-              ]
-            },
+            coordinates: [
+              parking.lng,
+              parking.lat
+            ]
+          },
 
-            properties: {
-              id:
-                parking.id || "",
+          properties: {
+            id:
+              parking.id || "",
 
-              cellId:
-                parking.cellId || "",
+            cellId:
+              parking.cellId || "",
 
-              roadName:
-                parking.roadName || "",
+            roadName:
+              parking.roadName || "",
 
-              name:
-                parking.name || "",
+            name:
+              parking.name || "",
 
-              memo:
-                parking.memo || "",
+            memo:
+              parking.memo || "",
 
-              pay:
-                parking.pay || "",
+            pay:
+              parking.pay || "",
 
-              payCash:
-                parking.payCash || "",
+            payCash:
+              parking.payCash || "",
 
-              hour:
-                parking.hour || "",
+            hour:
+              parking.hour || "",
 
-              statusKey:
-                parking.statusKey || "unknown",
+            statusKey:
+              parking.statusKey || "unknown",
 
-              displayStatus:
-                parking.displayStatus || "狀態未知",
+            displayStatus:
+              parking.displayStatus || "狀態未知",
 
-              markerColor:
-                parking.markerColor || "#9ca3af",
+            markerColor:
+              parking.markerColor || "#9ca3af",
 
-              specialKey:
-                parking.specialKey || "normal",
+            specialKey:
+              parking.specialKey || "normal",
 
-              specialLabel:
-                parking.specialLabel || "一般車格",
+            specialLabel:
+              parking.specialLabel || "一般車格",
 
-              borderColor:
-                parking.borderColor || "#ffffff",
+            borderColor:
+              parking.borderColor || "#ffffff",
 
-              lat:
-                parking.lat,
+            lat:
+              parking.lat,
 
-              lng:
-                parking.lng,
-
-              rotation:
-                0
-            }
-          };
-        }
+            lng:
+              parking.lng
+          }
+        })
       )
   };
-}
-
-/* =====================================================
-   Low-zoom grouped parking bars
-===================================================== */
-
-function clearGroupMarkers() {
-  groupMarkers.forEach(
-    marker =>
-      marker.remove()
-  );
-
-  groupMarkers =
-    [];
-}
-
-function buildGradient(
-  group
-) {
-  const total =
-    group.empty +
-    group.occupied +
-    group.unknown;
-
-  if (
-    total <= 0
-  ) {
-    return "#9ca3af";
-  }
-
-  const emptyEnd =
-    group.empty /
-    total *
-    100;
-
-  const occupiedEnd =
-    (
-      group.empty +
-      group.occupied
-    )
-    /
-    total *
-    100;
-
-  return `
-    conic-gradient(
-      #22c55e 0% ${emptyEnd}%,
-      #ef4444 ${emptyEnd}% ${occupiedEnd}%,
-      #9ca3af ${occupiedEnd}% 100%
-    )
-  `;
-}
-
-function groupVisibleParking(
-  list
-) {
-  const zoom =
-    map.getZoom();
-
-  /*
-    縮越小，合併範圍越大。
-  */
-  const gridSize =
-    zoom < 16
-      ? 58
-      : 46;
-
-  const groups =
-    new Map();
-
-  for (
-    const parking
-    of list
-  ) {
-    const projected =
-      map.project([
-        parking.lng,
-        parking.lat
-      ]);
-
-    const xBucket =
-      Math.floor(
-        projected.x /
-        gridSize
-      );
-
-    const yBucket =
-      Math.floor(
-        projected.y /
-        gridSize
-      );
-
-    /*
-      加入 roadName，避免十字路口不同道路被硬併在一起。
-    */
-    const roadKey =
-      normalizeRoadName(
-        parking.roadName
-      )
-      ||
-      "unknown-road";
-
-    const key =
-      `${roadKey}:${xBucket}:${yBucket}`;
-
-    if (
-      !groups.has(key)
-    ) {
-      groups.set(
-        key,
-        {
-          items: [],
-          empty: 0,
-          occupied: 0,
-          unknown: 0,
-          specialKeys:
-            new Set()
-        }
-      );
-    }
-
-    const group =
-      groups.get(key);
-
-    group.items.push(
-      parking
-    );
-
-    group[
-      parking.statusKey ||
-      "unknown"
-    ]++;
-
-    group.specialKeys.add(
-      parking.specialKey ||
-      "normal"
-    );
-  }
-
-  return [
-    ...groups.values()
-  ];
-}
-
-function renderGroupedParking(
-  list
-) {
-  clearGroupMarkers();
-
-  /*
-    高縮放個別 layer 清空。
-  */
-  map
-    .getSource(
-      "parking-source"
-    )
-    .setData({
-      type: "FeatureCollection",
-      features: []
-    });
-
-  const groups =
-    groupVisibleParking(
-      list
-    );
-
-  groups.forEach(
-    group => {
-      const lat =
-        group.items.reduce(
-          (sum, item) =>
-            sum + item.lat,
-          0
-        )
-        /
-        group.items.length;
-
-      const lng =
-        group.items.reduce(
-          (sum, item) =>
-            sum + item.lng,
-          0
-        )
-        /
-        group.items.length;
-
-      /*
-        v1.0.7：
-        群組色帶也不再依道路旋轉。
-      */
-      const rotation =
-        0;
-
-      const element =
-        document.createElement(
-          "div"
-        );
-
-      element.className =
-        "group-parking-dot";
-
-      element.style.background =
-        buildGradient(
-          group
-        );
-
-      /*
-        群組若只包含一種特殊車位，
-        仍保留特殊外框。
-        混合多種時用白框避免誤判。
-      */
-      if (
-        group.specialKeys.size === 1
-      ) {
-        const onlyType =
-          [
-            ...group.specialKeys
-          ][0];
-
-        element.style.borderColor =
-          BORDER_COLORS[
-            onlyType
-          ]
-          ||
-          "#ffffff";
-      }
-
-      element.title =
-        `${group.items.length} 個車格`;
-
-      const marker =
-        new maplibregl.Marker({
-          element,
-          anchor: "center",
-          rotation,
-          rotationAlignment: "map"
-        })
-        .setLngLat([
-          lng,
-          lat
-        ])
-        .addTo(map);
-
-      /*
-        點群組 = 放大，讓個別車格拆開。
-      */
-      element.addEventListener(
-        "click",
-        event => {
-          event.stopPropagation();
-
-          map.easeTo({
-            center: [
-              lng,
-              lat
-            ],
-
-            zoom:
-              Math.max(
-                INDIVIDUAL_ZOOM,
-                map.getZoom() + 1.2
-              ),
-
-            duration:
-              650
-          });
-        }
-      );
-
-      groupMarkers.push(
-        marker
-      );
-    }
-  );
 }
 
 /* =====================================================
@@ -2671,7 +2695,39 @@ function updateFilterCounts(
    Render
 ===================================================== */
 
-function renderParking() {
+function getFilteredParkingData() {
+  const statusFilters =
+    getActiveStatusFilters();
+
+  const typeFilters =
+    getActiveTypeFilters();
+
+  return parkingData.filter(
+    parking =>
+      statusFilters.has(
+        parking.statusKey ||
+        "unknown"
+      )
+      &&
+      typeFilters.has(
+        parking.specialKey ||
+        "normal"
+      )
+  );
+}
+
+/*
+  只有在：
+  - 初次資料載入
+  - API 更新
+  - 篩選條件改變
+
+  才重新設定 GeoJSON source。
+
+  使用者單純拖地圖時不重建 source，
+  所以標記點會牢牢固定在地圖座標上。
+*/
+function refreshParkingSource() {
   if (
     !mapReady ||
     !map.getSource(
@@ -2681,20 +2737,32 @@ function renderParking() {
     return;
   }
 
-  clearGroupMarkers();
+  const filtered =
+    getFilteredParkingData();
+
+  map
+    .getSource(
+      "parking-source"
+    )
+    .setData(
+      buildParkingFeatureCollection(
+        filtered
+      )
+    );
+
+  updateViewSummary();
+}
+
+function updateViewSummary() {
+  if (
+    !mapReady
+  ) {
+    return;
+  }
 
   if (
     !parkingData.length
   ) {
-    map
-      .getSource(
-        "parking-source"
-      )
-      .setData({
-        type: "FeatureCollection",
-        features: []
-      });
-
     bottomCount.textContent =
       "目前沒有停車格資料";
 
@@ -2708,15 +2776,6 @@ function renderParking() {
     zoom <
     MIN_ZOOM
   ) {
-    map
-      .getSource(
-        "parking-source"
-      )
-      .setData({
-        type: "FeatureCollection",
-        features: []
-      });
-
     bottomCount.textContent =
       "請放大地圖查看停車格";
 
@@ -2745,7 +2804,7 @@ function renderParking() {
   const typeFilters =
     getActiveTypeFilters();
 
-  const filtered =
+  const visibleFiltered =
     visibleAll.filter(
       parking =>
         statusFilters.has(
@@ -2759,36 +2818,6 @@ function renderParking() {
         )
     );
 
-  const list =
-    filtered.slice(
-      0,
-      MAX_VISIBLE_MARKERS
-    );
-
-  /*
-    縮小：合併成色帶。
-    放大：拆成個別車格。
-  */
-  if (
-    zoom <
-    INDIVIDUAL_ZOOM
-  ) {
-    renderGroupedParking(
-      list
-    );
-  }
-  else {
-    map
-      .getSource(
-        "parking-source"
-      )
-      .setData(
-        buildIndividualFeatureCollection(
-          list
-        )
-      );
-  }
-
   if (
     visibleAll.length === 0
   ) {
@@ -2796,7 +2825,7 @@ function renderParking() {
       "目前畫面內沒有停車格";
   }
   else if (
-    filtered.length ===
+    visibleFiltered.length ===
     visibleAll.length
   ) {
     bottomCount.textContent =
@@ -2804,8 +2833,15 @@ function renderParking() {
   }
   else {
     bottomCount.textContent =
-      `目前顯示 ${filtered.length.toLocaleString()} / ${visibleAll.length.toLocaleString()} 個停車格`;
+      `目前顯示 ${visibleFiltered.length.toLocaleString()} / ${visibleAll.length.toLocaleString()} 個停車格`;
   }
+}
+
+/*
+  保留舊呼叫名稱，資料更新時直接刷新 source。
+*/
+function renderParking() {
+  refreshParkingSource();
 }
 
 /* =====================================================
@@ -3339,10 +3375,67 @@ map.on(
       }
     );
 
+    /*
+      點合併圓點就往該區域放大。
+    */
+    map.on(
+      "click",
+      "parking-cluster-layer",
+      event => {
+        const feature =
+          event.features &&
+          event.features[0];
+
+        if (
+          !feature
+        ) {
+          return;
+        }
+
+        map.easeTo({
+          center:
+            feature.geometry.coordinates,
+
+          zoom:
+            Math.min(
+              map.getZoom() + 1.5,
+              18
+            ),
+
+          duration:
+            550
+        });
+      }
+    );
+
+    map.on(
+      "mouseenter",
+      "parking-cluster-layer",
+      () => {
+        map
+          .getCanvas()
+          .style
+          .cursor =
+          "pointer";
+      }
+    );
+
+    map.on(
+      "mouseleave",
+      "parking-cluster-layer",
+      () => {
+        map
+          .getCanvas()
+          .style
+          .cursor =
+          "";
+      }
+    );
+
     locateUser();
 
     /*
-      v1.0.7：
+      v1.0.8：
       先顯示 GitHub Pages 部署時已產生好的 parking.json。
       使用者先看到停車格，不必等 Vercel / 政府 API。
 
@@ -3392,7 +3485,7 @@ map.on(
 map.on(
   "moveend",
   () => {
-    renderParking();
+    updateViewSummary();
     showMapUI();
   }
 );
@@ -3405,7 +3498,7 @@ map.on(
 map.on(
   "zoomend",
   () => {
-    renderParking();
+    updateViewSummary();
     showMapUI();
   }
 );
