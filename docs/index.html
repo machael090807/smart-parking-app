@@ -585,6 +585,82 @@ input {
 }
 
 /* =====================================================
+   Theme / Dark mode
+===================================================== */
+
+.theme-button {
+  width: 100%;
+  height: 46px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #1f2937;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] body {
+  background: #0f1115;
+}
+
+html[data-theme="dark"] .menu-button,
+html[data-theme="dark"] .side-menu,
+html[data-theme="dark"] .info-card,
+html[data-theme="dark"] .locate-bottom-button,
+html[data-theme="dark"] .maplibregl-popup-content {
+  background: rgba(24, 27, 33, 0.97);
+  color: #f3f4f6;
+}
+
+html[data-theme="dark"] .menu-lines span {
+  background: #f3f4f6;
+}
+
+html[data-theme="dark"] .menu-title,
+html[data-theme="dark"] .filter-name,
+html[data-theme="dark"] .bottom-count,
+html[data-theme="dark"] .parking-popup {
+  color: #f3f4f6;
+}
+
+html[data-theme="dark"] .menu-version,
+html[data-theme="dark"] .menu-section-title,
+html[data-theme="dark"] .bottom-status {
+  color: #a7afbb;
+}
+
+html[data-theme="dark"] .filter-item {
+  border-color: #343a45;
+}
+
+html[data-theme="dark"] .filter-item:hover {
+  background: #22262d;
+}
+
+html[data-theme="dark"] .menu-close,
+html[data-theme="dark"] .menu-action,
+html[data-theme="dark"] .filter-count,
+html[data-theme="dark"] .menu-attribution,
+html[data-theme="dark"] .theme-button {
+  background: #22262d;
+  color: #e5e7eb;
+  border-color: #343a45;
+}
+
+html[data-theme="dark"] .menu-attribution {
+  color: #a7afbb;
+}
+
+html[data-theme="dark"] .popup-space {
+  border-color: #20242b;
+}
+
+html[data-theme="dark"] .maplibregl-popup-tip {
+  border-top-color: #181b21 !important;
+  border-bottom-color: #181b21 !important;
+}
+
+/* =====================================================
    Responsive
 ===================================================== */
 
@@ -700,7 +776,7 @@ input {
         </div>
 
         <div class="menu-version">
-          版本：v1.0.9
+          版本：v1.1.1
         </div>
       </div>
 
@@ -790,6 +866,18 @@ input {
     </div>
 
     <div class="menu-section-title">
+      顯示模式
+    </div>
+
+    <button
+      id="themeToggleButton"
+      class="theme-button"
+      type="button"
+    >
+      🌙 切換深色模式
+    </button>
+
+    <div class="menu-section-title">
       圖示說明
     </div>
 
@@ -846,6 +934,14 @@ input {
     </div>
 
     <button
+      id="reloadButton"
+      class="bottom-action refresh-button"
+      type="button"
+    >
+      重新整理
+    </button>
+
+    <button
       id="locateButton"
       class="bottom-action locate-bottom-button"
       type="button"
@@ -862,14 +958,6 @@ input {
       </svg>
     </button>
 
-    <button
-      id="reloadButton"
-      class="bottom-action refresh-button"
-      type="button"
-    >
-      重新整理
-    </button>
-
   </div>
 
 </div>
@@ -879,10 +967,16 @@ input {
    Config
 ===================================================== */
 
-const APP_VERSION = "1.0.9";
+const APP_VERSION = "1.1.1";
+
+const IS_LOCAL =
+  location.hostname === "127.0.0.1" ||
+  location.hostname === "localhost";
 
 const LIVE_API_URL =
-  "https://smart-parking-app-api.vercel.app/api/parking";
+  IS_LOCAL
+    ? "http://127.0.0.1:3000/api/parking"
+    : "https://smart-parking-app-api.vercel.app/api/parking";
 
 const DEFAULT_CENTER = [
   121.4618,
@@ -899,8 +993,31 @@ const INDIVIDUAL_ZOOM = 17;
 
 const MAX_VISIBLE_MARKERS = 1600;
 
-const MAP_STYLE_URL =
+const LIGHT_MAP_STYLE_URL =
   "https://tiles.openfreemap.org/styles/liberty";
+
+const DARK_MAP_STYLE_URL =
+  "https://tiles.openfreemap.org/styles/dark";
+
+const savedTheme =
+  localStorage.getItem("smartParkingTheme");
+
+let currentTheme =
+  savedTheme ||
+  (
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
+  );
+
+document.documentElement.dataset.theme =
+  currentTheme;
+
+const MAP_STYLE_URL =
+  currentTheme === "dark"
+    ? DARK_MAP_STYLE_URL
+    : LIGHT_MAP_STYLE_URL;
 
 /* =====================================================
    DOM
@@ -982,6 +1099,9 @@ const selectAllButton =
 const clearAllButton =
   document.getElementById("clearAllButton");
 
+const themeToggleButton =
+  document.getElementById("themeToggleButton");
+
 /* =====================================================
    State
 ===================================================== */
@@ -1032,6 +1152,72 @@ const map =
   });
 
 /* =====================================================
+   Theme
+===================================================== */
+
+function updateThemeButton() {
+  if (!themeToggleButton) {
+    return;
+  }
+
+  themeToggleButton.textContent =
+    currentTheme === "dark"
+      ? "☀️ 切換淺色模式"
+      : "🌙 切換深色模式";
+}
+
+function applyTheme(
+  theme,
+  {
+    changeMapStyle = true
+  } = {}
+) {
+  currentTheme =
+    theme === "dark"
+      ? "dark"
+      : "light";
+
+  document.documentElement.dataset.theme =
+    currentTheme;
+
+  localStorage.setItem(
+    "smartParkingTheme",
+    currentTheme
+  );
+
+  const themeColorMeta =
+    document.querySelector(
+      'meta[name="theme-color"]'
+    );
+
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute(
+      "content",
+      currentTheme === "dark"
+        ? "#0f1115"
+        : "#1677ff"
+    );
+  }
+
+  updateThemeButton();
+
+  if (
+    changeMapStyle &&
+    mapReady
+  ) {
+    styleSimplified = false;
+
+    map.setStyle(
+      currentTheme === "dark"
+        ? DARK_MAP_STYLE_URL
+        : LIGHT_MAP_STYLE_URL
+    );
+  }
+}
+
+updateThemeButton();
+
+/* =====================================================
    Menu
 ===================================================== */
 
@@ -1058,6 +1244,17 @@ menuClose.addEventListener(
 menuBackdrop.addEventListener(
   "click",
   closeMenu
+);
+
+themeToggleButton.addEventListener(
+  "click",
+  () => {
+    applyTheme(
+      currentTheme === "dark"
+        ? "light"
+        : "dark"
+    );
+  }
 );
 
 document.addEventListener(
@@ -1637,128 +1834,288 @@ function parseLiveCSV(
 }
 
 /* =====================================================
-   Static / live data
+   Viewport API data
+
+   v1.1.0：
+   不再讓瀏覽器下載 40MB+ 的 parking.json。
+   每次只向 API 要「目前地圖畫面 bbox」內的車格。
+
+   新北：
+   - API 端保留即時資料快取
+   - 按重新整理時 refresh=1 強制更新
+
+   台北：
+   - API 端讀取已產生的 parking-taipei.json
+   - 只回傳目前畫面附近資料
 ===================================================== */
 
-async function fetchStaticParkingSnapshot() {
-  const response =
-    await fetch(
-      `./parking.json?v=${APP_VERSION}`,
-      {
-        cache: "force-cache"
-      }
-    );
+let viewportRequestController =
+  null;
 
-  if (!response.ok) {
-    throw new Error(
-      `parking.json HTTP ${response.status}`
+let viewportLoadTimer =
+  null;
+
+const VIEWPORT_FETCH_DELAY =
+  220;
+
+const VIEWPORT_LIMIT =
+  6000;
+
+function formatTime24(
+  date = new Date()
+) {
+  return new Intl.DateTimeFormat(
+    "zh-TW",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    }
+  ).format(date);
+}
+
+function buildViewportApiURL({
+  forceRefresh = false
+} = {}) {
+  const bounds =
+    map.getBounds();
+
+  const params =
+    new URLSearchParams({
+      west:
+        bounds
+          .getWest()
+          .toFixed(7),
+
+      east:
+        bounds
+          .getEast()
+          .toFixed(7),
+
+      south:
+        bounds
+          .getSouth()
+          .toFixed(7),
+
+      north:
+        bounds
+          .getNorth()
+          .toFixed(7),
+
+      limit:
+        String(
+          VIEWPORT_LIMIT
+        )
+    });
+
+  if (
+    forceRefresh
+  ) {
+    params.set(
+      "refresh",
+      "1"
     );
   }
-
-  const result =
-    await response.json();
 
   return (
-    Array.isArray(result.data)
-      ? result.data
-      : []
-  )
-  .map(normalizeParking)
-  .filter(Boolean);
+    LIVE_API_URL
+    +
+    "?"
+    +
+    params.toString()
+  );
 }
 
-/*
-  進站時先立刻開始下載 GitHub Pages 內的預載快照。
-  地圖底圖還在載入時，停車資料已經同步下載中。
-*/
-const initialParkingSnapshotPromise =
-  fetchStaticParkingSnapshot();
-
-async function loadStaticParking() {
-  parkingData =
-    await initialParkingSnapshotPromise;
-
-  if (!parkingData.length) {
-    throw new Error(
-      "預載停車資料為空"
-    );
+async function loadViewportParking({
+  silent = false,
+  forceRefresh = false
+} = {}) {
+  if (
+    !mapReady
+  ) {
+    return false;
   }
 
-  bottomStatus.textContent =
-    "已顯示預載停車資料，正在取得最新狀態…";
+  const zoom =
+    map.getZoom();
 
-  renderParking();
+  /*
+    地圖太遠時先不取大量資料。
+  */
+  if (
+    zoom <
+    MIN_ZOOM
+  ) {
+    parkingData =
+      [];
 
-  return true;
-}
+    refreshParkingSource();
 
-async function refreshLiveParking({ silent = false } = {}) {
-  if (!silent) {
+    bottomCount.textContent =
+      "請放大地圖查看停車格";
+
+    bottomStatus.textContent =
+      "放大後只載入目前畫面範圍";
+
+    return true;
+  }
+
+  /*
+    使用者快速拖動時，
+    取消上一個尚未完成的 request。
+  */
+  if (
+    viewportRequestController
+  ) {
+    viewportRequestController.abort();
+  }
+
+  viewportRequestController =
+    new AbortController();
+
+  if (
+    !silent
+  ) {
     reloadButton.disabled =
       true;
 
     reloadButton.textContent =
       "更新中…";
-
-    bottomStatus.textContent =
-      "正在向政府 API 取得最新資料…";
   }
+
+  bottomStatus.textContent =
+    forceRefresh
+      ? "正在更新目前畫面的最新停車資料…"
+      : "正在載入目前畫面的停車格…";
 
   try {
     const response =
       await fetch(
-        LIVE_API_URL +
-        "?t=" +
-        Date.now(),
+        buildViewportApiURL({
+          forceRefresh
+        }),
         {
-          method: "GET",
-          cache: "no-store"
+          method:
+            "GET",
+
+          headers: {
+            Accept:
+              "application/json"
+          },
+
+          cache:
+            "no-store",
+
+          signal:
+            viewportRequestController.signal
         }
       );
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
       throw new Error(
-        `Live API HTTP ${response.status}`
+        `Parking API HTTP ${response.status}`
       );
     }
 
-    const csvText =
-      await response.text();
+    const payload =
+      await response.json();
+
+    if (
+      !payload ||
+      payload.success !== true
+    ) {
+      throw new Error(
+        "Parking API 回傳格式錯誤"
+      );
+    }
 
     const latestData =
-      parseLiveCSV(
-        csvText
+      (
+        Array.isArray(
+          payload.data
+        )
+          ? payload.data
+          : []
+      )
+      .map(
+        normalizeParking
+      )
+      .filter(
+        Boolean
       );
-
-    if (!latestData.length) {
-      throw new Error(
-        "即時 API 沒有可用停車資料"
-      );
-    }
 
     parkingData =
       latestData;
 
-    const now =
-      new Date();
+    refreshParkingSource();
+
+    const cityParts =
+      [];
+
+    const counts =
+      payload.counts || {};
+
+    if (
+      Number(
+        counts.newTaipei
+      ) > 0
+    ) {
+      cityParts.push(
+        `新北 ${Number(counts.newTaipei).toLocaleString()}`
+      );
+    }
+
+    if (
+      Number(
+        counts.taipei
+      ) > 0
+    ) {
+      cityParts.push(
+        `台北 ${Number(counts.taipei).toLocaleString()}`
+      );
+    }
+
+    const truncatedText =
+      payload.truncated
+        ? "資料較多，請再放大 · "
+        : "";
+
+    const cityText =
+      cityParts.length
+        ? cityParts.join(" · ")
+        : "目前範圍無資料";
 
     bottomStatus.textContent =
-      `最新資料 · ${now.toLocaleTimeString("zh-TW")}`;
-
-    renderParking();
+      `${truncatedText}${cityText} · ${formatTime24()}`;
 
     return true;
   }
   catch (error) {
-    console.error(error);
+    if (
+      error &&
+      error.name ===
+      "AbortError"
+    ) {
+      return false;
+    }
+
+    console.error(
+      "目前畫面停車資料載入失敗：",
+      error
+    );
 
     bottomStatus.textContent =
-      "即時更新失敗，保留目前資料";
+      "目前畫面停車資料載入失敗";
 
     return false;
   }
   finally {
-    if (!silent) {
+    if (
+      !silent
+    ) {
       reloadButton.disabled =
         false;
 
@@ -1768,10 +2125,26 @@ async function refreshLiveParking({ silent = false } = {}) {
   }
 }
 
+function scheduleViewportParkingLoad() {
+  clearTimeout(
+    viewportLoadTimer
+  );
+
+  viewportLoadTimer =
+    setTimeout(
+      () => {
+        loadViewportParking({
+          silent: true
+        });
+      },
+      VIEWPORT_FETCH_DELAY
+    );
+}
+
 /* =====================================================
    Native MapLibre parking markers
 
-   v1.0.9:
+   v1.1.0:
    - 不使用 DOM Marker 顯示車格或群組
    - 所有點位都由 MapLibre 原生圖層繪製
    - 拖動地圖時會固定在地理座標，不會晃動
@@ -2371,8 +2744,9 @@ function ensureParkingSourceAndLayer() {
   }
 
   /*
-    只有放大到接近最細節層級後，才顯示車格編號。
-    使用同一個 MapLibre source，所以文字會跟著地圖座標固定。
+    放大到細節層級後顯示真正車格編號。
+    注意：coalesce 不會把空字串當成 null，
+    所以這裡明確判斷 cellId 是否為空，再 fallback 到 id。
   */
   if (
     !map.getLayer(
@@ -2386,7 +2760,7 @@ function ensureParkingSourceAndLayer() {
 
       source: "parking-source",
 
-      minzoom: 18.75,
+      minzoom: 17.8,
 
       filter: [
         "!",
@@ -2398,16 +2772,39 @@ function ensureParkingSourceAndLayer() {
 
       layout: {
         "text-field": [
-          "coalesce",
+          "case",
           [
-            "get",
-            "cellId"
+            ">",
+            [
+              "length",
+              [
+                "to-string",
+                [
+                  "get",
+                  "cellId"
+                ]
+              ]
+            ],
+            0
           ],
           [
-            "get",
-            "id"
+            "to-string",
+            [
+              "get",
+              "cellId"
+            ]
           ],
-          ""
+          [
+            "to-string",
+            [
+              "coalesce",
+              [
+                "get",
+                "id"
+              ],
+              ""
+            ]
+          ]
         ],
 
         "text-size": [
@@ -2419,15 +2816,21 @@ function ensureParkingSourceAndLayer() {
             "zoom"
           ],
 
-          18.75, 9.5,
-          19, 11
+          17.8, 10,
+          18.5, 11,
+          19, 12
         ],
 
-        /*
-          文字直接以圓點座標為中心。
-        */
         "text-anchor":
-          "center",
+          "bottom",
+
+        "text-offset": [
+          0,
+          -1.15
+        ],
+
+        "text-padding":
+          1,
 
         "text-allow-overlap":
           true,
@@ -2438,13 +2841,17 @@ function ensureParkingSourceAndLayer() {
 
       paint: {
         "text-color":
-          "#111827",
+          currentTheme === "dark"
+            ? "#f8fafc"
+            : "#111827",
 
         "text-halo-color":
-          "#ffffff",
+          currentTheme === "dark"
+            ? "#111318"
+            : "#ffffff",
 
         "text-halo-width":
-          2,
+          2.2,
 
         "text-halo-blur":
           0.4
@@ -3231,8 +3638,9 @@ clearAllButton.addEventListener(
 reloadButton.addEventListener(
   "click",
   () => {
-    refreshLiveParking({
-      silent: false
+    loadViewportParking({
+      silent: false,
+      forceRefresh: true
     });
   }
 );
@@ -3286,6 +3694,25 @@ function showMapUI() {
       90
     );
 }
+
+/*
+  切換深色 / 淺色地圖時，MapLibre 會清掉自訂 source / layer。
+  style.load 完成後重新掛回停車格圖層。
+*/
+map.on(
+  "style.load",
+  () => {
+    if (!mapReady) {
+      return;
+    }
+
+    styleSimplified = false;
+
+    simplifyMapStyle();
+    ensureParkingSourceAndLayer();
+    refreshParkingSource();
+  }
+);
 
 /* =====================================================
    Map load
@@ -3400,38 +3827,15 @@ map.on(
       }
     );
 
-    locateUser();
-
     /*
-      v1.0.9：
-      先顯示 GitHub Pages 部署時已產生好的 parking.json。
-      使用者先看到停車格，不必等 Vercel / 政府 API。
-
-      第一版畫面出現後，再於背景讀取最新狀態。
+      先建立目前畫面的資料，
+      GPS 成功後地圖移動會再自動載入新範圍。
     */
-    try {
-      await loadStaticParking();
+    await loadViewportParking({
+      silent: true
+    });
 
-      setTimeout(
-        () => {
-          refreshLiveParking({
-            silent: true
-          });
-        },
-        180
-      );
-    }
-    catch (error) {
-      console.error(error);
-
-      /*
-        如果部署快照不存在，
-        才直接等待 Live API。
-      */
-      await refreshLiveParking({
-        silent: false
-      });
-    }
+    locateUser();
   }
 );
 
@@ -3453,8 +3857,9 @@ map.on(
 map.on(
   "moveend",
   () => {
-    updateViewSummary();
     showMapUI();
+
+    scheduleViewportParkingLoad();
   }
 );
 
@@ -3466,8 +3871,9 @@ map.on(
 map.on(
   "zoomend",
   () => {
-    updateViewSummary();
     showMapUI();
+
+    scheduleViewportParkingLoad();
   }
 );
 
