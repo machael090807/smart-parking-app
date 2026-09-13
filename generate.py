@@ -39,6 +39,11 @@ TAIPEI_JSON_PATH = (
     / "parking-taipei.json"
 )
 
+NEW_TAIPEI_JSON_PATH = (
+    DOCS_DIR
+    / "parking-newtaipei.json"
+)
+
 
 UNIFIED_JSON_PATH = (
     DOCS_DIR
@@ -1512,6 +1517,24 @@ def main():
     new_taipei_data = (
         fetch_new_taipei()
     )
+
+    if new_taipei_data:
+        NEW_TAIPEI_JSON_PATH.write_text(
+            json.dumps(
+                new_taipei_data,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+
+        print(
+            f"新北快照輸出：{NEW_TAIPEI_JSON_PATH}"
+        )
+
+        print(
+            f"新北快照：{len(new_taipei_data):,} 格"
+        )
 
 
     taipei_data = None

@@ -1108,6 +1108,11 @@ const themeToggleButton =
 
 let parkingData = [];
 
+let lastParkingFeatureCollection = {
+  type: "FeatureCollection",
+  features: []
+};
+
 let userMarker = null;
 
 let mapReady = false;
@@ -1153,7 +1158,12 @@ const map =
 
 /* =====================================================
    Theme
+   不再使用 map.setStyle()
+   黑白模式只修改目前底圖圖層的顏色
 ===================================================== */
+
+const originalMapPaint =
+  new Map();
 
 function updateThemeButton() {
   if (!themeToggleButton) {
@@ -1166,11 +1176,398 @@ function updateThemeButton() {
       : "🌙 切換深色模式";
 }
 
+
+/*
+  記住原本淺色地圖的 paint，
+  之後切回淺色時完整還原。
+*/
+function rememberOriginalPaint(
+  layerId,
+  property
+) {
+  const key =
+    `${layerId}::${property}`;
+
+  if (
+    originalMapPaint.has(key)
+  ) {
+    return;
+  }
+
+  const value =
+    map.getPaintProperty(
+      layerId,
+      property
+    );
+
+  originalMapPaint.set(
+    key,
+    value === undefined
+      ? null
+      : value
+  );
+}
+
+
+/*
+  安全修改 paint。
+  某些 layer 沒有該屬性時不讓它中斷整個切換。
+*/
+function setThemePaint(
+  layerId,
+  property,
+  value
+) {
+  try {
+    rememberOriginalPaint(
+      layerId,
+      property
+    );
+
+    map.setPaintProperty(
+      layerId,
+      property,
+      value
+    );
+  } catch (error) {
+    // 該 layer 不支援此 paint property，直接略過。
+  }
+}
+
+
+/*
+  切回淺色時，
+  還原一開始記錄的原始底圖顏色。
+*/
+function restoreLightMapPaint() {
+  for (
+    const [
+      key,
+      value
+    ]
+    of originalMapPaint.entries()
+  ) {
+    const separatorIndex =
+      key.lastIndexOf("::");
+
+    if (
+      separatorIndex < 0
+    ) {
+      continue;
+    }
+
+    const layerId =
+      key.slice(
+        0,
+        separatorIndex
+      );
+
+    const property =
+      key.slice(
+        separatorIndex + 2
+      );
+
+    if (
+      !map.getLayer(layerId)
+    ) {
+      continue;
+    }
+
+    try {
+      map.setPaintProperty(
+        layerId,
+        property,
+        value
+      );
+    } catch (error) {
+      // 不支援就略過
+    }
+  }
+}
+
+
+/*
+  深色模式：
+  不換 Style，
+  只把現有底圖重新上色。
+
+  parking-* 圖層完全不碰，
+  所以車格位置與狀態不會消失。
+*/
+function applyDarkMapPaint() {
+  const style =
+    map.getStyle();
+
+  if (
+    !style ||
+    !Array.isArray(
+      style.layers
+    )
+  ) {
+    return;
+  }
+
+  for (
+    const layer
+    of style.layers
+  ) {
+    const layerId =
+      String(
+        layer.id || ""
+      );
+
+    /*
+      停車格由我們自己的 layer 控制，
+      黑白切換絕對不要改它。
+    */
+    if (
+      layerId.startsWith(
+        "parking-"
+      )
+    ) {
+      continue;
+    }
+
+    const id =
+      layerId.toLowerCase();
+
+    const sourceLayer =
+      String(
+        layer["source-layer"] || ""
+      ).toLowerCase();
+
+    const keyword =
+      `${id} ${sourceLayer}`;
+
+    const type =
+      String(
+        layer.type || ""
+      ).toLowerCase();
+
+
+    /*
+      3D 永遠關閉。
+    */
+    if (
+      type ===
+      "fill-extrusion"
+    ) {
+      try {
+        map.setLayoutProperty(
+          layer.id,
+          "visibility",
+          "none"
+        );
+      } catch (error) {
+        // ignore
+      }
+
+      continue;
+    }
+
+
+    /*
+      地圖背景
+    */
+    if (
+      type ===
+      "background"
+    ) {
+      setThemePaint(
+        layer.id,
+        "background-color",
+        "#0b0f14"
+      );
+
+      continue;
+    }
+
+
+    /*
+      面狀區域
+    */
+    if (
+      type === "fill"
+    ) {
+      let color =
+        "#11161c";
+
+      if (
+        /water|ocean|river|lake|stream|canal/
+          .test(keyword)
+      ) {
+        color =
+          "#102634";
+      } else if (
+        /park|grass|wood|forest|landuse|landcover/
+          .test(keyword)
+      ) {
+        color =
+          "#121d18";
+      } else if (
+        /building/
+          .test(keyword)
+      ) {
+        color =
+          "#181d23";
+      } else if (
+        /residential|commercial|retail/
+          .test(keyword)
+      ) {
+        color =
+          "#12171d";
+      }
+
+      setThemePaint(
+        layer.id,
+        "fill-color",
+        color
+      );
+
+      setThemePaint(
+        layer.id,
+        "fill-outline-color",
+        "#202832"
+      );
+
+      continue;
+    }
+
+
+    /*
+      道路 / 邊界 / 線條
+    */
+    if (
+      type === "line"
+    ) {
+      let color =
+        "#2b333d";
+
+      if (
+        /motorway|trunk|primary/
+          .test(keyword)
+      ) {
+        color =
+          "#56616d";
+      } else if (
+        /secondary|tertiary/
+          .test(keyword)
+      ) {
+        color =
+          "#414b56";
+      } else if (
+        /road|street|transport|highway/
+          .test(keyword)
+      ) {
+        color =
+          "#333c46";
+      } else if (
+        /water|river|stream|canal/
+          .test(keyword)
+      ) {
+        color =
+          "#17374b";
+      }
+
+      setThemePaint(
+        layer.id,
+        "line-color",
+        color
+      );
+
+      continue;
+    }
+
+
+    /*
+      地名 / 道路名稱 / POI 文字
+    */
+    if (
+      type === "symbol"
+    ) {
+      setThemePaint(
+        layer.id,
+        "text-color",
+        "#b9c2cc"
+      );
+
+      setThemePaint(
+        layer.id,
+        "text-halo-color",
+        "#0b0f14"
+      );
+
+      setThemePaint(
+        layer.id,
+        "text-halo-width",
+        1.2
+      );
+    }
+  }
+}
+
+
+/*
+  實際套用目前主題到地圖。
+  不會 setStyle、不會刪 source、不會重新打 API。
+*/
+function applyMapTheme() {
+  if (
+    !mapReady
+  ) {
+    return;
+  }
+
+  /*
+    先保證 3D 等不需要的圖層維持關閉。
+  */
+  simplifyMapStyle();
+
+  if (
+    currentTheme === "dark"
+  ) {
+    applyDarkMapPaint();
+  } else {
+    restoreLightMapPaint();
+
+    /*
+      還原顏色後再確保 3D 沒被打開。
+    */
+    styleSimplified = false;
+    simplifyMapStyle();
+  }
+
+
+  /*
+    車格編號文字本身需要配合黑白模式，
+    但 source / data 完全不動。
+  */
+  if (
+    map.getLayer(
+      "parking-number-layer"
+    )
+  ) {
+    map.setPaintProperty(
+      "parking-number-layer",
+      "text-color",
+      currentTheme === "dark"
+        ? "#f8fafc"
+        : "#111827"
+    );
+
+    map.setPaintProperty(
+      "parking-number-layer",
+      "text-halo-color",
+      currentTheme === "dark"
+        ? "#111318"
+        : "#ffffff"
+    );
+  }
+}
+
+
 function applyTheme(
-  theme,
-  {
-    changeMapStyle = true
-  } = {}
+  theme
 ) {
   currentTheme =
     theme === "dark"
@@ -1190,7 +1587,9 @@ function applyTheme(
       'meta[name="theme-color"]'
     );
 
-  if (themeColorMeta) {
+  if (
+    themeColorMeta
+  ) {
     themeColorMeta.setAttribute(
       "content",
       currentTheme === "dark"
@@ -1201,17 +1600,15 @@ function applyTheme(
 
   updateThemeButton();
 
+  /*
+    重要：
+    以前這裡是 map.setStyle(...)
+    現在完全不換 style。
+  */
   if (
-    changeMapStyle &&
     mapReady
   ) {
-    styleSimplified = false;
-
-    map.setStyle(
-      currentTheme === "dark"
-        ? DARK_MAP_STYLE_URL
-        : LIGHT_MAP_STYLE_URL
-    );
+    applyMapTheme();
   }
 }
 
@@ -2453,10 +2850,7 @@ function ensureParkingSourceAndLayer() {
           ]
         },
 
-        data: {
-          type: "FeatureCollection",
-          features: []
-        }
+        data: lastParkingFeatureCollection
       }
     );
   }
@@ -3113,17 +3507,20 @@ function refreshParkingSource() {
   }
 
   const filtered =
-    getFilteredParkingData();
+  getFilteredParkingData();
 
-  map
-    .getSource(
-      "parking-source"
-    )
-    .setData(
-      buildParkingFeatureCollection(
-        filtered
-      )
-    );
+lastParkingFeatureCollection =
+  buildParkingFeatureCollection(
+    filtered
+  );
+
+map
+  .getSource(
+    "parking-source"
+  )
+  .setData(
+    lastParkingFeatureCollection
+  );
 
   updateViewSummary();
 }
@@ -3699,6 +4096,106 @@ function showMapUI() {
   切換深色 / 淺色地圖時，MapLibre 會清掉自訂 source / layer。
   style.load 完成後重新掛回停車格圖層。
 */
+
+function restoreParkingAfterStyleChange() {
+  const delays = [
+    0,
+    80,
+    200,
+    450,
+    800,
+    1300
+  ];
+
+  const restore = () => {
+    if (
+      !mapReady ||
+      !map.isStyleLoaded()
+    ) {
+      return;
+    }
+
+    try {
+      /*
+        每次 setStyle() 都可能清除自訂 source / layer / image。
+        所以重新確認它們全部存在。
+      */
+      ensureParkingSourceAndLayer();
+
+      const source =
+        map.getSource(
+          "parking-source"
+        );
+
+      if (
+        source &&
+        lastParkingFeatureCollection
+      ) {
+        source.setData(
+          lastParkingFeatureCollection
+        );
+      }
+
+      console.log(
+        "恢復停車格",
+        {
+          features:
+            lastParkingFeatureCollection
+              ?.features
+              ?.length || 0,
+
+          source:
+            !!map.getSource(
+              "parking-source"
+            ),
+
+          parkingLayer:
+            !!map.getLayer(
+              "parking-layer"
+            ),
+
+          clusterLayer:
+            !!map.getLayer(
+              "parking-cluster-layer"
+            ),
+
+          numberLayer:
+            !!map.getLayer(
+              "parking-number-layer"
+            )
+        }
+      );
+    } catch (error) {
+      console.warn(
+        "恢復停車格失敗，稍後重試",
+        error
+      );
+    }
+  };
+
+  /*
+    不同裝置載入新 style 的速度不同，
+    在幾個時間點重新確認 layer 是否存在。
+  */
+  for (
+    const delay
+    of delays
+  ) {
+    setTimeout(
+      restore,
+      delay
+    );
+  }
+
+  /*
+    style 真正完全穩定後再補一次。
+  */
+  map.once(
+    "idle",
+    restore
+  );
+}
+
 map.on(
   "style.load",
   () => {
@@ -3708,9 +4205,16 @@ map.on(
 
     styleSimplified = false;
 
+    /*
+      先整理新的底圖樣式。
+    */
     simplifyMapStyle();
-    ensureParkingSourceAndLayer();
-    refreshParkingSource();
+
+    /*
+      再恢復原本已經載入好的停車格。
+      不重新 fetch API。
+    */
+    restoreParkingAfterStyleChange();
   }
 );
 

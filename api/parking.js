@@ -2,10 +2,17 @@ const fs = require("fs");
 const path = require("path");
 
 /* =========================================================
-   Smart Parking API v1.1.0
-   - 新北：政府即時資料，記憶體快取 2 分鐘
-   - 台北：讀取 docs/parking-taipei.json
-   - 只回傳目前地圖 bbox 內資料
+   Smart Parking API v1.1.2
+
+   一般載入：
+   - 新北：parking-newtaipei.json 快照
+   - 台北：parking-taipei.json 快照
+   - 不連政府即時 API
+
+   refresh=1：
+   - 才向新北市政府取得最新狀態
+   - 以 cellid / id 對應既有快照
+   - 保留快照座標，只更新狀態相關欄位
 ========================================================= */
 
 const NTPC_DATASET_ID =
@@ -14,21 +21,28 @@ const NTPC_DATASET_ID =
 const NTPC_CSV_URL =
   `https://data.ntpc.gov.tw/api/datasets/${NTPC_DATASET_ID}/csv/file`;
 
-const NTPC_CACHE_MS = 120 * 1000;
 const DEFAULT_LIMIT = 5000;
 const MAX_LIMIT = 8000;
 
-let taipeiCache = null;
-let taipeiLoadPromise = null;
+/* =========================================================
+   記憶體快取
+========================================================= */
 
-let ntpcCache = {
-  data: [],
-  loadedAt: 0,
-  promise: null
-};
+let newTaipeiSnapshotCache = null;
+let newTaipeiSnapshotPromise = null;
+
+let taipeiSnapshotCache = null;
+let taipeiSnapshotPromise = null;
+
+/* =========================================================
+   基本工具
+========================================================= */
 
 function clean(value) {
-  if (value === undefined || value === null) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return "";
   }
 
@@ -36,17 +50,27 @@ function clean(value) {
 }
 
 function getValue(row, ...keys) {
-  if (!row) return "";
+  if (!row) {
+    return "";
+  }
 
   const lowerMap = {};
 
-  for (const [key, value] of Object.entries(row)) {
-    lowerMap[String(key).toLowerCase()] = value;
+  for (
+    const [key, value]
+    of Object.entries(row)
+  ) {
+    lowerMap[
+      String(key).toLowerCase()
+    ] = value;
   }
 
   for (const key of keys) {
     if (
-      Object.prototype.hasOwnProperty.call(row, key) &&
+      Object.prototype.hasOwnProperty.call(
+        row,
+        key
+      ) &&
       row[key] !== undefined &&
       row[key] !== null &&
       String(row[key]).trim() !== ""
@@ -64,7 +88,9 @@ function getValue(row, ...keys) {
       ) &&
       lowerMap[lowerKey] !== undefined &&
       lowerMap[lowerKey] !== null &&
-      String(lowerMap[lowerKey]).trim() !== ""
+      String(
+        lowerMap[lowerKey]
+      ).trim() !== ""
     ) {
       return lowerMap[lowerKey];
     }
@@ -74,12 +100,13 @@ function getValue(row, ...keys) {
 }
 
 /* =========================================================
-   CSV
+   CSV Parser
 ========================================================= */
 
 function parseCSV(text) {
   text =
-    String(text || "").replace(/^\uFEFF/, "");
+    String(text || "")
+      .replace(/^\uFEFF/, "");
 
   const rows = [];
 
@@ -119,7 +146,6 @@ function parseCSV(text) {
     ) {
       row.push(field);
       field = "";
-
       continue;
     }
 
@@ -138,7 +164,6 @@ function parseCSV(text) {
       }
 
       row.push(field);
-
       field = "";
 
       if (
@@ -151,7 +176,6 @@ function parseCSV(text) {
       }
 
       row = [];
-
       continue;
     }
 
@@ -198,7 +222,7 @@ function parseCSV(text) {
 }
 
 /* =========================================================
-   狀態 / 特殊車格
+   狀態
 ========================================================= */
 
 function detectStatus(record) {
@@ -325,13 +349,7 @@ function statusLabel(key) {
 }
 
 function enrichRecord(record) {
-  const statusKey =
-    detectStatus(record);
-
-  const specialKey =
-    detectSpecialType(record);
-
-  return {
+  const normalized = {
     id:
       clean(record.id),
 
@@ -390,7 +408,17 @@ function enrichRecord(record) {
       clean(record.cityName),
 
     source:
-      clean(record.source),
+      clean(record.source)
+  };
+
+  const statusKey =
+    detectStatus(normalized);
+
+  const specialKey =
+    detectSpecialType(normalized);
+
+  return {
+    ...normalized,
 
     statusKey,
 
@@ -405,10 +433,176 @@ function enrichRecord(record) {
 }
 
 /* =========================================================
-   新北市
+   讀取 JSON 快照
 ========================================================= */
 
-function normalizeNewTaipei(row) {
+function readSnapshotFile(
+  filename,
+  defaults = {}
+) {
+  const filePath =
+    path.join(
+      process.cwd(),
+      "docs",
+      filename
+    );
+
+  if (
+    !fs.existsSync(filePath)
+  ) {
+    console.error(
+      `找不到快照：${filePath}`
+    );
+
+    return [];
+  }
+
+  const raw =
+    fs.readFileSync(
+      filePath,
+      "utf8"
+    );
+
+  const parsed =
+    JSON.parse(raw);
+
+  const source =
+    Array.isArray(parsed)
+      ? parsed
+      : Array.isArray(parsed?.data)
+        ? parsed.data
+        : [];
+
+  return source
+    .map(
+      (record) =>
+        enrichRecord({
+          ...record,
+
+          city:
+            record.city ||
+            defaults.city ||
+            "",
+
+          cityName:
+            record.cityName ||
+            defaults.cityName ||
+            "",
+
+          source:
+            record.source ||
+            defaults.source ||
+            ""
+        })
+    )
+    .filter(
+      (record) =>
+        Number.isFinite(
+          record.latitude
+        ) &&
+        Number.isFinite(
+          record.longitude
+        )
+    );
+}
+
+/* =========================================================
+   新北快照
+========================================================= */
+
+async function loadNewTaipeiSnapshot() {
+  if (
+    newTaipeiSnapshotCache
+  ) {
+    return newTaipeiSnapshotCache;
+  }
+
+  if (
+    newTaipeiSnapshotPromise
+  ) {
+    return newTaipeiSnapshotPromise;
+  }
+
+  newTaipeiSnapshotPromise =
+    Promise.resolve()
+      .then(() => {
+        newTaipeiSnapshotCache =
+          readSnapshotFile(
+            "parking-newtaipei.json",
+            {
+              city:
+                "NewTaipei",
+
+              cityName:
+                "新北市",
+
+              source:
+                "ntpc-snapshot"
+            }
+          );
+
+        return newTaipeiSnapshotCache;
+      });
+
+  try {
+    return await newTaipeiSnapshotPromise;
+  } finally {
+    newTaipeiSnapshotPromise =
+      null;
+  }
+}
+
+/* =========================================================
+   台北快照
+========================================================= */
+
+async function loadTaipeiSnapshot() {
+  if (
+    taipeiSnapshotCache
+  ) {
+    return taipeiSnapshotCache;
+  }
+
+  if (
+    taipeiSnapshotPromise
+  ) {
+    return taipeiSnapshotPromise;
+  }
+
+  taipeiSnapshotPromise =
+    Promise.resolve()
+      .then(() => {
+        taipeiSnapshotCache =
+          readSnapshotFile(
+            "parking-taipei.json",
+            {
+              city:
+                "Taipei",
+
+              cityName:
+                "台北市",
+
+              source:
+                "taipei-static"
+            }
+          );
+
+        return taipeiSnapshotCache;
+      });
+
+  try {
+    return await taipeiSnapshotPromise;
+  } finally {
+    taipeiSnapshotPromise =
+      null;
+  }
+}
+
+/* =========================================================
+   新北政府即時資料
+========================================================= */
+
+function normalizeNewTaipeiLive(row) {
   const latitude =
     Number(
       getValue(
@@ -580,186 +774,177 @@ function normalizeNewTaipei(row) {
       "新北市",
 
     source:
-      "ntpc"
+      "ntpc-live"
   });
 }
 
-async function fetchNewTaipei(
-  forceRefresh = false
-) {
-  const now =
-    Date.now();
+async function fetchNewTaipeiLive() {
+  const response =
+    await fetch(
+      `${NTPC_CSV_URL}?t=${Date.now()}`,
+      {
+        method:
+          "GET",
 
-  if (
-    !forceRefresh &&
-    ntpcCache.data.length &&
-    now - ntpcCache.loadedAt <
-      NTPC_CACHE_MS
-  ) {
-    return ntpcCache.data;
-  }
+        headers: {
+          Accept:
+            "text/csv,*/*",
 
-  if (
-    ntpcCache.promise
-  ) {
-    return ntpcCache.promise;
-  }
+          "User-Agent":
+            "Smart-Parking-App/1.1.2",
 
-  ntpcCache.promise =
-    (async () => {
-      const url =
-        `${NTPC_CSV_URL}?t=${Date.now()}`;
+          "Cache-Control":
+            "no-cache"
+        },
 
-      const response =
-        await fetch(
-          url,
-          {
-            method:
-              "GET",
-
-            headers: {
-              Accept:
-                "text/csv,*/*",
-
-              "User-Agent":
-                "Smart-Parking-App/1.1",
-
-              "Cache-Control":
-                "no-cache"
-            },
-
-            cache:
-              "no-store"
-          }
-        );
-
-      if (
-        !response.ok
-      ) {
-        throw new Error(
-          `NTPC HTTP ${response.status}`
-        );
+        cache:
+          "no-store"
       }
+    );
 
-      const text =
-        await response.text();
-
-      const data =
-        parseCSV(text)
-          .map(
-            normalizeNewTaipei
-          )
-          .filter(Boolean);
-
-      ntpcCache.data =
-        data;
-
-      ntpcCache.loadedAt =
-        Date.now();
-
-      return data;
-    })();
-
-  try {
-    return await ntpcCache.promise;
-  } finally {
-    ntpcCache.promise =
-      null;
+  if (
+    !response.ok
+  ) {
+    throw new Error(
+      `NTPC HTTP ${response.status}`
+    );
   }
+
+  const text =
+    await response.text();
+
+  return parseCSV(text)
+    .map(
+      normalizeNewTaipeiLive
+    )
+    .filter(Boolean);
 }
 
 /* =========================================================
-   台北市快照
+   對應車格 ID
 ========================================================= */
 
-async function loadTaipei() {
-  if (
-    taipeiCache
-  ) {
-    return taipeiCache;
+function parkingKey(record) {
+  const cellid =
+    clean(record.cellid);
+
+  if (cellid) {
+    return `cell:${cellid}`;
   }
 
-  if (
-    taipeiLoadPromise
-  ) {
-    return taipeiLoadPromise;
+  const id =
+    clean(record.id);
+
+  if (id) {
+    return `id:${id}`;
   }
 
-  taipeiLoadPromise =
-    Promise.resolve()
-      .then(() => {
-        const filePath =
-          path.join(
-            process.cwd(),
-            "docs",
-            "parking-taipei.json"
-          );
+  return "";
+}
 
-        if (
-          !fs.existsSync(
-            filePath
-          )
-        ) {
-          return [];
-        }
+/* =========================================================
+   最新狀態合併到快照
 
-        const raw =
-          fs.readFileSync(
-            filePath,
-            "utf8"
-          );
+   重要：
+   - 保留快照 latitude / longitude
+   - 只更新政府最新狀態及可能變動欄位
+========================================================= */
 
-        const parsed =
-          JSON.parse(raw);
+function mergeLiveIntoSnapshot(
+  snapshot,
+  liveData
+) {
+  const liveMap =
+    new Map();
 
-        const source =
-          Array.isArray(parsed)
-            ? parsed
-            : Array.isArray(
-                parsed?.data
-              )
-              ? parsed.data
-              : [];
+  for (
+    const live
+    of liveData
+  ) {
+    const key =
+      parkingKey(live);
 
-        taipeiCache =
-          source
-            .map(
-              (record) =>
-                enrichRecord({
-                  ...record,
+    if (key) {
+      liveMap.set(
+        key,
+        live
+      );
+    }
+  }
 
-                  city:
-                    record.city ||
-                    "Taipei",
+  return snapshot.map(
+    (saved) => {
+      const key =
+        parkingKey(saved);
 
-                  cityName:
-                    record.cityName ||
-                    "台北市",
+      if (!key) {
+        return saved;
+      }
 
-                  source:
-                    record.source ||
-                    "taipei-static"
-                })
-            )
-            .filter(
-              (record) =>
-                Number.isFinite(
-                  record.latitude
-                ) &&
-                Number.isFinite(
-                  record.longitude
-                )
-            );
+      const live =
+        liveMap.get(key);
 
-        return taipeiCache;
+      if (!live) {
+        return saved;
+      }
+
+      return enrichRecord({
+        ...saved,
+
+        /*
+          位置永遠沿用已存快照
+        */
+        latitude:
+          saved.latitude,
+
+        longitude:
+          saved.longitude,
+
+        /*
+          即時更新資訊
+        */
+        cellstatus:
+          live.cellstatus,
+
+        parkingstatus:
+          live.parkingstatus,
+
+        isnowcash:
+          live.isnowcash,
+
+        day:
+          live.day ||
+          saved.day,
+
+        hour:
+          live.hour ||
+          saved.hour,
+
+        pay:
+          live.pay ||
+          saved.pay,
+
+        paycash:
+          live.paycash ||
+          saved.paycash,
+
+        memo:
+          live.memo ||
+          saved.memo,
+
+        name:
+          live.name ||
+          saved.name,
+
+        roadname:
+          live.roadname ||
+          saved.roadname,
+
+        source:
+          "ntpc-live"
       });
-
-  try {
-    return await taipeiLoadPromise;
-  } finally {
-    taipeiLoadPromise =
-      null;
-  }
+    }
+  );
 }
 
 /* =========================================================
@@ -956,8 +1141,8 @@ async function handler(
     ) === "1";
 
   /*
-    沒有 bbox 時只做快速健康檢查，
-    不載入 11 萬筆資料。
+    沒有 bbox：
+    只回 API 健康狀態
   */
   if (
     !bbox
@@ -979,10 +1164,13 @@ async function handler(
           "summary",
 
         version:
-          "1.1.0",
+          "1.1.2",
+
+        loadingMode:
+          "snapshot-first",
 
         message:
-          "API 正常。請提供 west/east/south/north 取得目前地圖範圍內的停車格。",
+          "API 正常。一般載入使用快照；refresh=1 才取得新北最新狀態。",
 
         data:
           []
@@ -992,39 +1180,74 @@ async function handler(
     return;
   }
 
+  /*
+    先讀本機快照。
+    這一步完全不連政府 API。
+  */
+  const [
+    savedNewTaipei,
+    taipei
+  ] =
+    await Promise.all([
+      loadNewTaipeiSnapshot(),
+      loadTaipeiSnapshot()
+    ]);
+
   let newTaipei =
-    [];
+    savedNewTaipei;
 
   let ntpcMode =
-    "live";
+    "snapshot";
 
-  try {
-    newTaipei =
-      await fetchNewTaipei(
-        forceRefresh
-      );
-  } catch (error) {
-    console.error(
-      "新北即時資料取得失敗：",
-      error
-    );
+  let refreshed =
+    false;
 
-    ntpcMode =
-      "unavailable";
+  let refreshError =
+    null;
 
-    if (
-      ntpcCache.data.length
-    ) {
+  /*
+    只有使用者按重新整理
+    才進這裡。
+  */
+  if (
+    forceRefresh
+  ) {
+    try {
+      const live =
+        await fetchNewTaipeiLive();
+
       newTaipei =
-        ntpcCache.data;
+        mergeLiveIntoSnapshot(
+          savedNewTaipei,
+          live
+        );
 
       ntpcMode =
-        "memory-cache";
+        "live";
+
+      refreshed =
+        true;
+    } catch (error) {
+      console.error(
+        "新北即時更新失敗：",
+        error
+      );
+
+      /*
+        即時 API 壞掉也不要讓地圖消失。
+        保留原本快照。
+      */
+      newTaipei =
+        savedNewTaipei;
+
+      ntpcMode =
+        "snapshot-fallback";
+
+      refreshError =
+        error?.message ||
+        String(error);
     }
   }
-
-  const taipei =
-    await loadTaipei();
 
   const inViewNewTaipei =
     newTaipei.filter(
@@ -1076,7 +1299,12 @@ async function handler(
         "bbox",
 
       version:
-        "1.1.0",
+        "1.1.2",
+
+      loadingMode:
+        forceRefresh
+          ? "manual-refresh"
+          : "snapshot",
 
       generatedAt:
         new Date()
@@ -1100,7 +1328,7 @@ async function handler(
 
       sourceTotals: {
         newTaipei:
-          newTaipei.length,
+          savedNewTaipei.length,
 
         taipei:
           taipei.length
@@ -1110,7 +1338,11 @@ async function handler(
 
       limit,
 
+      refreshed,
+
       ntpcMode,
+
+      refreshError,
 
       data
     })
